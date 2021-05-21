@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Translation\TranslatorInterface;
+use Psr\Log\LoggerInterface;
 
 class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_Transport, CallbackTransportInterface
 {
@@ -53,7 +54,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      */
     private $webhookSigningKey;
 
-    public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '')
+    public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger)
     {
         $this->transportCallback = $transportCallback;
         $this->client = $client;
@@ -61,6 +62,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         $this->maxBatchLimit = $maxBatchLimit;
         $this->batchRecipientCount = $batchRecipientCount ?: 0;
         $this->webhookSigningKey = $webhookSigningKey;
+        $this->logger = $logger;
     }
 
     public function setApiKey(?string $apiKey): void
@@ -202,6 +204,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      */
     public function processCallbackRequest(Request $request)
     {
+        $this->logger->error(sprintf('Mailgun %s', $request->getContent()));
+
         $postData = json_decode($request->getContent(), true);
 
         if (is_array($postData) && isset($postData['event-data'])) {
@@ -249,8 +253,14 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                 if ($event['recipient'] == $leadEmail) {
                     $this->transportCallback->addFailureByHashId($leadIdHash, $reason, $type);
                 }
+
+                $this->logger->error('Mailgung calling addFailure by HASH ID');
+                $this->logger->error($leadIdHash);
+
             } else {
+                $this->logger->error('Mailgung calling addFailure by ADDRESS');
                 $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type);
+
             }
         }
     }

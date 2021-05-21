@@ -26,6 +26,7 @@ return [
                     '%mautic.mailer_mailgun_max_batch_limit%',
                     '%mautic.mailer_mailgun_batch_recipient_count%',
                     '%mautic.mailer_mailgun_webhook_signing_key%',
+                    'monolog.logger.mautic'
                 ],
                 'methodCalls' => [
                     'setApiKey' => ['%mautic.mailer_api_key%'],
@@ -44,10 +45,5 @@ return [
             ],
         ],
     ],
-    'parameters' => [
-        'mailer_mailgun_max_batch_limit' => 4500,
-        'mailer_mailgun_batch_recipient_count' => 1000,
-        'mailer_mailgun_region' => 'us',
-        'mailer_mailgun_webhook_signing_key' => '',
-    ],
+
 ];
