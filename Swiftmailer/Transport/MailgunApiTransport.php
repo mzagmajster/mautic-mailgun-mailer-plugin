@@ -191,51 +191,70 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return 'mailgun_api';
     }
 
-    public function processCallbackRequest(Request $request): void
+      /**
+     * Handle response.
+     *
+     * @param Request $request
+     *
+     * @preplaced
+     *
+     * @return mixed
+     */
+    public function processCallbackRequest(Request $request)
     {
         $postData = json_decode($request->getContent(), true);
-        if (empty($this->webhookSigningKey)) {
-            return;
-        }
 
-        $signature = $postData['signature'];
-        if (!$this->verifyCallback($signature['token'], $signature['timestamp'], $signature['signature'])) {
-            throw new HttpException(400, 'Wrong signature');
-        }
-
-        if (!isset($postData['event-data'])) {
+        if (is_array($postData) && isset($postData['event-data'])) {
+            // Mailgun API callback
+            $events = [
+                $postData['event-data'],
+            ];
+        } else {
             // response must be an array
-            return;
+            return null;
         }
 
-        $event = $postData['event-data'];
-        $eventName = strtolower($event['event']);
-        if (!in_array($eventName, ['bounce', 'rejected', 'complained', 'unsubscribed', 'permanent_fail', 'failed'])) {
-            return;
-        }
-
-        $reason = $eventName;
-        $type = DoNotContact::IS_CONTACTABLE;
-
-        if ($eventName === 'bounce' || $eventName === 'rejected' || $eventName === 'permanent_fail' || $eventName === 'failed') {
-            if (!empty($event['delivery-status']['message'])) {
-                $reason = $event['delivery-status']['message'];
-            } elseif (!empty($event['delivery-status']['description'])) {
-                $reason = $event['delivery-status']['description'];
+        foreach ($events as $event) {
+            if (!in_array($event['event'], ['bounce', 'rejected', 'complained', 'unsubscribed', 'permanent_fail', 'failed'])) {
+                continue;
             }
-            $type = DoNotContact::BOUNCED;
-        } elseif ($eventName === 'complained') {
-            if (isset($event['delivery-status']['message'])) {
-                $reason = $event['delivery-status']['message'];
+            $reason = $event['event'];
+            if ($event['event'] === 'bounce' || $event['event'] === 'rejected' || $event['event'] === 'permanent_fail' || $event['event'] === 'failed') {
+                if (!empty($event['delivery-status']['message'])) {
+                    $reason = $event['delivery-status']['message'];
+                }elseif (!empty($event['delivery-status']['description'])) {
+                    $reason = $event['delivery-status']['description'];
+                }
+                $type = DoNotContact::BOUNCED;
+            } elseif ($event['event'] === 'complained') {
+                if (isset($event['delivery-status']['message'])) {
+                    $reason = $event['delivery-status']['message'];
+                }
+                $type = DoNotContact::UNSUBSCRIBED;
+            } elseif ($event['event'] === 'unsubscribed') {
+                $reason = 'User unsubscribed';
+                $type = DoNotContact::UNSUBSCRIBED;
+            } else {
+                continue;
             }
-            $type = DoNotContact::UNSUBSCRIBED;
-        } elseif ($eventName === 'unsubscribed') {
-            $reason = 'User unsubscribed';
-            $type = DoNotContact::UNSUBSCRIBED;
-        }
 
-        $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type);
+            if (isset($event['user-variables']['CUSTOMID'])) {
+                $event['CustomID'] = $event['user-variables']['CUSTOMID'];
+            }
+
+            if (isset($event['CustomID']) && $event['CustomID'] !== '' && strpos($event['CustomID'], '-', 0) !== false) {
+                $fistDashPos = strpos($event['CustomID'], '-', 0);
+                $leadIdHash = substr($event['CustomID'], 0, $fistDashPos);
+                $leadEmail = substr($event['CustomID'], $fistDashPos + 1, strlen($event['CustomID']));
+                if ($event['recipient'] == $leadEmail) {
+                    $this->transportCallback->addFailureByHashId($leadIdHash, $reason, $type);
+                }
+            } else {
+                $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type);
+            }
+        }
     }
+
 
     /**
      * @param array $failedRecipients
