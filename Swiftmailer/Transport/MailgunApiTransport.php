@@ -115,6 +115,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
             $payload = $this->getPayload($preparedMessage);
             $payload['v:CUSTOMID'] = 59;  // Test only.
+            $this->logger->error(serialize($preparedMessage['headers']));
 
             $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->domain));
 
