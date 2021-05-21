@@ -114,6 +114,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             $preparedMessage = $this->getMessage($message);
 
             $payload = $this->getPayload($preparedMessage);
+            $payload['v:CUSTOMID'] = 59;  // Test only.
 
             $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->domain));
 
@@ -242,8 +243,12 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                 continue;
             }
 
+            $channelId = null;
             if (isset($event['user-variables']['CUSTOMID'])) {
                 $event['CustomID'] = $event['user-variables']['CUSTOMID'];
+
+                // Make sure channel ID is always set, so data on graph is displayed correctly.
+                $channelId = (int) $event['CustomID'];
             }
 
             if (isset($event['CustomID']) && $event['CustomID'] !== '' && strpos($event['CustomID'], '-', 0) !== false) {
@@ -259,7 +264,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
             } else {
                 $this->logger->error('Mailgung calling addFailure by ADDRESS');
-                $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type);
+                $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type, $channelId);
 
             }
         }
