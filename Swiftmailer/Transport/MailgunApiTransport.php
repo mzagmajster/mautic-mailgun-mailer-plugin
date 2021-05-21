@@ -114,8 +114,10 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             $preparedMessage = $this->getMessage($message);
 
             $payload = $this->getPayload($preparedMessage);
-            $payload['v:CUSTOMID'] = 59;  // Test only.
-            $this->logger->error(serialize($preparedMessage['headers']));
+            $payload['v:CUSTOMID'] = null;
+            if (isset($preparedMessage['headers']['TOTTGROUPID'])) {
+                $payload['v:CUSTOMID'] = (int) $preparedMessage['headers']['TOTTGROUPID'];
+            }
 
             $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->domain));
 
@@ -206,8 +208,6 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      */
     public function processCallbackRequest(Request $request)
     {
-        $this->logger->error(sprintf('Mailgun %s', $request->getContent()));
-
         $postData = json_decode($request->getContent(), true);
 
         if (is_array($postData) && isset($postData['event-data'])) {
@@ -260,13 +260,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                     $this->transportCallback->addFailureByHashId($leadIdHash, $reason, $type);
                 }
 
-                $this->logger->error('Mailgung calling addFailure by HASH ID');
-                $this->logger->error($leadIdHash);
-
             } else {
-                $this->logger->error('Mailgung calling addFailure by ADDRESS');
                 $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type, $channelId);
-
             }
         }
     }
