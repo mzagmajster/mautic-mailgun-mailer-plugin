@@ -121,6 +121,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
             $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->domain));
 
+            $this->logger->notice('Debuging mailgun plugin.......');
+            $this->logger->notice($payload);
             $response = $this->client->post(
                 'https://'.$endpoint,
                 [
