@@ -337,8 +337,10 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             'subject' => $message['subject'],
             'html' => $message['html'],
             'text' => $message['text'],
-            'recipient-variables' => json_encode($message['recipient-variables']),
         ];
+        if (count($message['recipient-variables'])) {
+            $payload['recipient-variables'] = json_encode($message['recipient-variables']);
+        }
         $this->logger->notice('recipient-variables');
         $this->logger->notice(json_encode($message['recipient-variables']));
 
