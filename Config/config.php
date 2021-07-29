@@ -9,12 +9,40 @@
  */
 
 return [
-    'name' => 'Mautic Mailgun Mailer Bundle',
+    'name' => 'MailgunMailer',
     'description' => 'Integrate Swiftmailer transport for Mailgun API',
     'author' => 'Stanislav Denysenko',
     'version' => '1.0.0',
 
     'services' => [
+        'forms' => [
+            'mautic.form.type.mailgun.settings' => [
+                'class' => 'MauticPlugin\MauticMailgunMailerBundle\Form\Type\MailgunSettingsType',
+            ],
+
+            'mautic.form.type.mailgun.config' => [
+                'class' => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\ConfigType::class
+            ]
+        ],
+
+        'events' => [
+            'mautic.mailgun.subscriber.config' => [
+                'class' => \MauticPlugin\MauticMailgunMailerBundle\EventListener\ConfigSubscriber::class,
+            ]
+        ],
+
+        /*'integrations' => [
+            'mautic.integration.mailgun' => [
+                'class'     => 'MauticPlugin\MauticMailgunMailerBundle\Integration\MailgunMailerIntegration',
+                'tags' => [
+                    'mautic.config_integration',
+                ],
+                'arguments' => [
+                    'mautic.helper.integration'
+                ],
+            ],
+        ],*/
+
         'other' => [
             'mautic.transport.mailgun_api' => [
                 'class' => \MauticPlugin\MauticMailgunMailerBundle\Swiftmailer\Transport\MailgunApiTransport::class,
@@ -45,5 +73,6 @@ return [
             ],
         ],
     ],
+
 
 ];
