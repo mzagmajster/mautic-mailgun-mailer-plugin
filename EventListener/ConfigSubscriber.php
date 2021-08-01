@@ -14,10 +14,17 @@ namespace MauticPlugin\MauticMailgunMailerBundle\EventListener;
 use Mautic\ConfigBundle\ConfigEvents;
 use Mautic\ConfigBundle\Event\ConfigBuilderEvent;
 use MauticPlugin\MauticMailgunMailerBundle\Form\Type\ConfigType;
+use Mautic\ConfigBundle\Event\ConfigEvent;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class ConfigSubscriber implements EventSubscriberInterface
 {
+    /**
+     * @var CoreParametersHelper
+     */
+    private $coreParametersHelper;
+    
     /**
      * @return array
      */

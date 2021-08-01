@@ -8,6 +8,8 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
+require_once MAUTIC_ROOT_DIR.'/plugins/MauticMailgunMailerBundle/.plugin-env.php';
+
 return [
     'name' => 'MailgunMailer',
     'description' => 'Integrate Swiftmailer transport for Mailgun API',
@@ -74,5 +76,10 @@ return [
         ],
     ],
 
-
+    'parameters' => [
+        'mailer_mailgun_max_batch_limit' => \MauticPlugin\MauticMailgunMailerBundle\Env\MAX_BATCH_LIMIT,
+        'mailer_mailgun_batch_recipient_count' => \MauticPlugin\MauticMailgunMailerBundle\Env\BATCH_RECIPIENT_COUNT,
+        'mailer_mailgun_region' => \MauticPlugin\MauticMailgunMailerBundle\Env\REGION,
+        'mailer_mailgun_webhook_signing_key' => \MauticPlugin\MauticMailgunMailerBundle\Env\WEBHOOK_SIGNING_KEY,
+    ]
 ];
