@@ -7,11 +7,11 @@ use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\EmailBundle\Swiftmailer\Transport\AbstractTokenArrayTransport;
 use Mautic\EmailBundle\Swiftmailer\Transport\CallbackTransportInterface;
 use Mautic\LeadBundle\Entity\DoNotContact;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Translation\TranslatorInterface;
-use Psr\Log\LoggerInterface;
 
 class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_Transport, CallbackTransportInterface
 {
@@ -56,13 +56,13 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
     public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger)
     {
-        $this->transportCallback = $transportCallback;
-        $this->client = $client;
-        $this->translator = $translator;
-        $this->maxBatchLimit = $maxBatchLimit;
+        $this->transportCallback   = $transportCallback;
+        $this->client              = $client;
+        $this->translator          = $translator;
+        $this->maxBatchLimit       = $maxBatchLimit;
         $this->batchRecipientCount = $batchRecipientCount ?: 0;
-        $this->webhookSigningKey = $webhookSigningKey;
-        $this->logger = $logger;
+        $this->webhookSigningKey   = $webhookSigningKey;
+        $this->logger              = $logger;
     }
 
     public function setApiKey(?string $apiKey): void
@@ -98,7 +98,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      */
     public function send(\Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
     {
-        $count = 0;
+        $count            = 0;
         $failedRecipients = (array) $failedRecipients;
 
         if ($evt = $this->getDispatcher()->createSendEvent($this, $message)) {
@@ -113,7 +113,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
             $preparedMessage = $this->getMessage($message);
 
-            $payload = $this->getPayload($preparedMessage);
+            $payload               = $this->getPayload($preparedMessage);
             $payload['v:CUSTOMID'] = null;
             if (isset($preparedMessage['headers']['TOTTGROUPID'])) {
                 $payload['v:CUSTOMID'] = (int) $preparedMessage['headers']['TOTTGROUPID'];
@@ -123,8 +123,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             $response = $this->client->post(
                 'https://'.$endpoint,
                 [
-                    'auth' => ['api', $this->apiKey, 'basic'],
-                    'headers' => $preparedMessage['headers'],
+                    'auth'        => ['api', $this->apiKey, 'basic'],
+                    'headers'     => $preparedMessage['headers'],
                     'form_params' => $payload,
                 ]
             );
@@ -160,8 +160,6 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      * @see https://help.mailgun.com/hc/en-us/articles/203068914-What-Are-the-Differences-Between-the-Free-and-Flex-Plans-
      *      there is limit depending on your account, and you can change it in configuration for this plugin
      *      Free plan requires 300 messages per day
-     *
-     * @return int
      */
     public function getMaxBatchLimit(): int
     {
@@ -176,13 +174,11 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      *
      * @param int    $toBeAdded Number of emails about to be added
      * @param string $type      Type of emails being added (to, cc, bcc)
-     *
-     * @return int
      */
     public function getBatchRecipientCount(\Swift_Message $message, $toBeAdded = 1, $type = 'to'): int
     {
-        $toCount = is_array($message->getTo()) ? count($message->getTo()) : 0;
-        $ccCount = is_array($message->getCc()) ? count($message->getCc()) : 0;
+        $toCount  = is_array($message->getTo()) ? count($message->getTo()) : 0;
+        $ccCount  = is_array($message->getCc()) ? count($message->getCc()) : 0;
         $bccCount = is_array($message->getBcc()) ? count($message->getBcc()) : 0;
 
         return null === $this->batchRecipientCount ? $this->batchRecipientCount : $toCount + $ccCount + $bccCount + $toBeAdded;
@@ -196,10 +192,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return 'mailgun_api';
     }
 
-      /**
+    /**
      * Handle response.
-     *
-     * @param Request $request
      *
      * @preplaced
      *
@@ -224,21 +218,21 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                 continue;
             }
             $reason = $event['event'];
-            if ($event['event'] === 'bounce' || $event['event'] === 'rejected' || $event['event'] === 'permanent_fail' || $event['event'] === 'failed') {
+            if ('bounce' === $event['event'] || 'rejected' === $event['event'] || 'permanent_fail' === $event['event'] || 'failed' === $event['event']) {
                 if (!empty($event['delivery-status']['message'])) {
                     $reason = $event['delivery-status']['message'];
-                }elseif (!empty($event['delivery-status']['description'])) {
+                } elseif (!empty($event['delivery-status']['description'])) {
                     $reason = $event['delivery-status']['description'];
                 }
                 $type = DoNotContact::BOUNCED;
-            } elseif ($event['event'] === 'complained') {
+            } elseif ('complained' === $event['event']) {
                 if (isset($event['delivery-status']['message'])) {
                     $reason = $event['delivery-status']['message'];
                 }
                 $type = DoNotContact::UNSUBSCRIBED;
-            } elseif ($event['event'] === 'unsubscribed') {
+            } elseif ('unsubscribed' === $event['event']) {
                 $reason = 'User unsubscribed';
-                $type = DoNotContact::UNSUBSCRIBED;
+                $type   = DoNotContact::UNSUBSCRIBED;
             } else {
                 continue;
             }
@@ -251,20 +245,18 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                 $channelId = (int) $event['CustomID'];
             }
 
-            if (isset($event['CustomID']) && $event['CustomID'] !== '' && strpos($event['CustomID'], '-', 0) !== false) {
+            if (isset($event['CustomID']) && '' !== $event['CustomID'] && false !== strpos($event['CustomID'], '-', 0)) {
                 $fistDashPos = strpos($event['CustomID'], '-', 0);
-                $leadIdHash = substr($event['CustomID'], 0, $fistDashPos);
-                $leadEmail = substr($event['CustomID'], $fistDashPos + 1, strlen($event['CustomID']));
+                $leadIdHash  = substr($event['CustomID'], 0, $fistDashPos);
+                $leadEmail   = substr($event['CustomID'], $fistDashPos + 1, strlen($event['CustomID']));
                 if ($event['recipient'] == $leadEmail) {
                     $this->transportCallback->addFailureByHashId($leadIdHash, $reason, $type);
                 }
-
             } else {
                 $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type, $channelId);
             }
         }
     }
-
 
     /**
      * @param array $failedRecipients
@@ -293,16 +285,16 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
     private function getMessage($message): array
     {
         $this->message = $message;
-        $metadata = $this->getMetadata();
+        $metadata      = $this->getMetadata();
 
         $mauticTokens = $tokenReplace = $mailgunTokens = [];
         if (!empty($metadata)) {
-            $metadataSet = reset($metadata);
-            $tokens = (!empty($metadataSet['tokens'])) ? $metadataSet['tokens'] : [];
+            $metadataSet  = reset($metadata);
+            $tokens       = (!empty($metadataSet['tokens'])) ? $metadataSet['tokens'] : [];
             $mauticTokens = array_keys($tokens);
             foreach ($tokens as $search => $token) {
-                $tokenKey = preg_replace('/[^\da-z]/i', '_', trim($search, '{}'));
-                $tokenReplace[$search] = '%recipient.'.$tokenKey.'%';
+                $tokenKey               = preg_replace('/[^\da-z]/i', '_', trim($search, '{}'));
+                $tokenReplace[$search]  = '%recipient.'.$tokenKey.'%';
                 $mailgunTokens[$search] = $tokenKey;
             }
         }
@@ -310,18 +302,18 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         $messageArray = $this->messageToArray($mauticTokens, $tokenReplace, true);
 
         $messageArray['recipient-variables'] = [];
-        $messageArray['to'] = [];
+        $messageArray['to']                  = [];
         foreach ($metadata as $recipient => $mailData) {
-            $messageArray['to'][] = $recipient;
+            $messageArray['to'][]                            = $recipient;
             $messageArray['recipient-variables'][$recipient] = [];
             foreach ($mailData['tokens'] as $token => $tokenData) {
                 $messageArray['recipient-variables'][$recipient][$mailgunTokens[$token]] = $tokenData;
             }
         }
-        
+
         if (empty($messageArray['to'])) {
-			$messageArray['to'] = array_keys($messageArray['recipients']['to']);
-		}
+            $messageArray['to'] = array_keys($messageArray['recipients']['to']);
+        }
 
         return $messageArray;
     }
@@ -329,18 +321,17 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
     private function getPayload(array $message): array
     {
         $payload = [
-            'from' => sprintf('%s <%s>', $message['from']['name'], $message['from']['email']),
-            'to' => $message['to'],
+            'from'    => sprintf('%s <%s>', $message['from']['name'], $message['from']['email']),
+            'to'      => $message['to'],
             'subject' => $message['subject'],
-            'html' => $message['html'],
-            'text' => $message['text'],
+            'html'    => $message['html'],
+            'text'    => $message['text'],
         ];
         if (count($message['recipient-variables'])) {
             $payload['recipient-variables'] = json_encode($message['recipient-variables']);
         }
         $this->logger->notice('recipient-variables');
         $this->logger->notice(json_encode($message['recipient-variables']));
-
 
         if (!empty($message['recipients']['cc'])) {
             $payload['cc'] = $message['recipients']['cc'];
@@ -353,7 +344,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return $payload;
     }
 
-    function verifyCallback(string $token, string $timestamp, string $signature): bool
+    public function verifyCallback(string $token, string $timestamp, string $signature): bool
     {
         // check if the timestamp is fresh
         if (\abs(\time() - $timestamp) > 15) {

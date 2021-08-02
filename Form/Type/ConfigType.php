@@ -13,8 +13,8 @@ namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
 use Mautic\CoreBundle\Form\DataTransformer\ArrayStringTransformer;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
@@ -95,7 +95,7 @@ class ConfigType extends AbstractType
         );
 
         // Add new account
-        
+
         $builder->add(
             'mailer_mailgun_new_host',
             TextType::class,
