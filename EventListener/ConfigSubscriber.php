@@ -25,6 +25,28 @@ class ConfigSubscriber implements EventSubscriberInterface
      */
     private $coreParametersHelper;
 
+    private function addNewMailgunAccount($config)
+    {
+        // Try to add new host.
+        // Get domain (Located at: [1]).
+        $parts = explode('@', $config['mailer_mailgun_new_host']);
+        if (count($parts) < 2) {
+            // @todo: Trigger error in the future.
+            return $config;
+        }
+
+        $config['mailer_mailgun_accounts'][$parts[1]] = [
+                'host'    => $config['mailer_mailgun_new_host'],
+                'api_key' => $config['mailer_mailgun_new_api_key'],
+        ];
+        unset(
+            $config['mailer_mailgun_new_host'],
+            $config['mailer_mailgun_new_api_key']
+        );
+
+        return $config;
+    }
+
     /**
      * @return array
      */
@@ -55,30 +77,22 @@ class ConfigSubscriber implements EventSubscriberInterface
         ]);
 
         $config = $event->getConfig('mailgunconfig');
+
         if (!isset($config['mailer_mailgun_accounts'])) {
             $config['mailer_mailgun_accounts'] = [];
         }
 
-        if (empty($config['mailer_mailgun_new_host']) || empty($config['mailer_mailgun_new_api_key'])) {
-            return;
+        if (!empty($config['mailer_mailgun_new_host']) && !empty($config['mailer_mailgun_new_api_key'])) {
+            $config = $this->addNewMailgunAccount($config);
         }
 
-        // Try to add new host.
-        // Get domain (Located at: [1]).
-        $parts = explode('@', $config['mailer_mailgun_new_host']);
-        if (count($parts) < 2) {
-            // @todo: Trigger error in the future.
-            return;
+        // Unset keys for individual account (prevent editing).
+        $keys = \array_keys($config);
+        foreach ($keys as $k) {
+            if (0 === \strpos($k, 'mailer_mailgun_account_')) {
+                unset($config[$k]);
+            }
         }
-
-        $config['mailer_mailgun_accounts'][$parts[1]] = [
-                'host'    => $config['mailer_mailgun_new_host'],
-                'api_key' => $config['mailer_mailgun_new_api_key'],
-        ];
-        unset(
-            $config['mailer_mailgun_new_host'],
-            $config['mailer_mailgun_new_api_key']
-        );
 
         $event->setConfig($config, 'mailgunconfig');
     }
