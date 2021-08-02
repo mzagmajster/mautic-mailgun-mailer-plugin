@@ -8,7 +8,19 @@
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
+$domainAccounts = [];
+$fieldNames     = \array_keys($form->children);
+foreach ($fieldNames as $name) {
+    if (0 !== strpos($name, 'mailer_mailgun_account_')) {
+        continue;
+    }
+
+    $domainAccounts[] = $name;
+}
+
 ?>
+
+
 
 <div class="panel panel-primary">
     <div class="panel-heading">
@@ -39,6 +51,7 @@
     
 </div>
 
+<!-- begin: new domain -->
 <div class="panel panel-primary">
     <div class="panel-heading">
         <h3 class="panel-title"><?php echo $view['translator']->trans('mautic.config.tab.mailgunconfig.new_domain'); ?></h3>
@@ -57,4 +70,31 @@
         </div>
         
     </div>
-</div>
+</div> <!-- end: new domain -->
+
+<!-- begin: Mailgun Accounts -->
+<?php foreach ($domainAccounts as $accountKey) { ?>
+    
+    <?php $domain = explode('@', $form->children[$accountKey]['host']->vars['value'])[1]; ?>
+    <div class="panel panel-primary">
+    <div class="panel-heading">
+        <h3 class="panel-title"><?php echo sprintf('Config for Domain: %s', $domain); ?></h3>
+    </div>
+    <div class="panel-body">
+        
+        <div class="row">
+            <div class="col-md-6">
+                <?php echo $view['form']->row($form->children[$accountKey]['host']); ?>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <?php echo $view['form']->row($form->children[$accountKey]['api_key']); ?>
+            </div>
+        </div>
+
+
+    </div>
+</div> <!-- end: Mailgun Accounts  -->
+<?php } ?>

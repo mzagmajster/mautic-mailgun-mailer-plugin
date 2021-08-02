@@ -18,12 +18,16 @@ return [
 
     'services' => [
         'forms' => [
-            'mautic.form.type.mailgun.settings' => [
-                'class' => 'MauticPlugin\MauticMailgunMailerBundle\Form\Type\MailgunSettingsType',
+            'mautic.form.type.mailgun.account' => [
+                'class'     => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\MailgunAccountType::class,
+                'arguments' => [],
             ],
 
             'mautic.form.type.mailgun.config' => [
-                'class' => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\ConfigType::class,
+                'class'     => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\ConfigType::class,
+                'arguments' => [
+                    'mautic.helper.core_parameters',
+                ],
             ],
         ],
 

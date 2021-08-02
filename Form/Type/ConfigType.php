@@ -12,6 +12,8 @@
 namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
 use Mautic\CoreBundle\Form\DataTransformer\ArrayStringTransformer;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use MauticPlugin\MauticMailgunMailerBundle\Form\Type\MailgunAccountType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -20,6 +22,13 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class ConfigType extends AbstractType
 {
+    private $coreParametersHelper;
+
+    public function __construct($coreParametersHelper)
+    {
+        $this->coreParametersHelper = $coreParametersHelper;
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder->add(
@@ -107,9 +116,9 @@ class ConfigType extends AbstractType
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
                     ],
                 'constraints' => [
-                    new NotBlank([
+                    /*new NotBlank([
                         'message' => 'mautic.core.value.required',
-                    ]),
+                    ]),*/
                 ],
             ]
         );
@@ -125,29 +134,41 @@ class ConfigType extends AbstractType
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
                     ],
                 'constraints' => [
-                    new NotBlank([
+                    /*new NotBlank([
                         'message' => 'mautic.core.value.required',
-                    ]),
+                    ]),*/
                 ],
             ]
         );
 
-        /*$arrayStringTransformer = new ArrayStringTransformer();
-        $builder->add(
-            $builder->create(
-                'mailer_mailgun_webhook_signing_key',
-                TextType::class,
+        $accounts = $this->coreParametersHelper->get('mailer_mailgun_accounts');
+        $i        = 0;
+        foreach ($accounts as $domain => $details) {
+            // Host
+            $builder->add(
+                sprintf('mailer_mailgun_account_%d', $i),
+                MailgunAccountType::class,
                 [
-                    'label'      => 'mautic.asset.config.form.allowed.extensions',
+                    'label'      => 'mautic.mailgunmailer.form.account',
                     'label_attr' => ['class' => 'control-label'],
                     'attr'       => [
                         'class'   => 'form-control',
-                        'tooltip' => 'mautic.asset.config.form.allowed.extensions.tooltip',
+                        // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
+                        ],
+                    'constraints' => [
+                        /*new NotBlank([
+                            'message' => 'mautic.core.value.required',
+                        ]),*/
                     ],
-                    'required' => false,
+                    'data' => $details,
                 ]
-            )->addViewTransformer($arrayStringTransformer)
-        );*/
+            );
+
+            ++$i;
+        }
+        /*echo '<pre>';
+        var_dump($accounts);
+        echo '</pre>';*/
     }
 
     /**
