@@ -29,7 +29,7 @@ class ConfigSubscriber implements EventSubscriberInterface
     {
         // Try to add new host.
         // Get domain (Located at: [1]).
-        $parts = explode('@', $config['mailer_mailgun_new_host']);
+        $parts = explode('.', $config['mailer_mailgun_new_host']);
         if (count($parts) < 2) {
             // @todo: Trigger error in the future.
             return $config;
@@ -45,6 +45,11 @@ class ConfigSubscriber implements EventSubscriberInterface
         );
 
         return $config;
+    }
+
+    private function getHostDomain($host)
+    {
+        return explode('.', $host)[1];
     }
 
     /**
@@ -86,12 +91,18 @@ class ConfigSubscriber implements EventSubscriberInterface
             $config = $this->addNewMailgunAccount($config);
         }
 
-        // Unset keys for individual account (prevent editing).
+        // Fix the config structure of existing accounts.
         $keys = \array_keys($config);
         foreach ($keys as $k) {
-            if (0 === \strpos($k, 'mailer_mailgun_account_')) {
-                unset($config[$k]);
+            if (false === \strpos($k, 'mailer_mailgun_account_')) {
+                continue;
             }
+
+            $accountDetails                             = $config[$k];
+            $domain                                     = $this->getHostDomain($config[$k]['host']);
+            $config['mailer_mailgun_accounts'][$domain] = $accountDetails;
+
+            unset($config[$k]);
         }
 
         $event->setConfig($config, 'mailgunconfig');
