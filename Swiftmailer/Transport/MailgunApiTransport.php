@@ -70,14 +70,29 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         $this->apiKey = $apiKey;
     }
 
+    public function getApiKey()
+    {
+        return $this->apiKey;
+    }
+
     public function setDomain(?string $domain): void
     {
         $this->domain = $domain;
     }
 
+    public function getDomain()
+    {
+        return $this->domain;
+    }
+
     public function setRegion(?string $region): void
     {
         $this->region = $region;
+    }
+
+    public function getRegion()
+    {
+        return $this->region;
     }
 
     public function start(): void

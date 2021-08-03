@@ -141,7 +141,7 @@ class ConfigType extends AbstractType
             ]
         );
 
-        $accounts = $this->coreParametersHelper->get('mailer_mailgun_accounts');
+        $accounts = $this->coreParametersHelper->get('mailer_mailgun_accounts', []);
         $i        = 0;
         foreach ($accounts as $domain => $details) {
             // Host

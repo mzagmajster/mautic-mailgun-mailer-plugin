@@ -54,7 +54,8 @@ class MailgunAccountType extends AbstractType
             TextType::class,
             [
                 'label'      => 'mautic.mailgunmailer.form.new.key',
-                'label_attr' => ['class' => 'control-label'],
+                'label_attr' => [
+                    'class' => 'control-label', ],
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
