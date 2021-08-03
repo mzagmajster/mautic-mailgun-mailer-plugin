@@ -29,7 +29,7 @@ class ConfigSubscriber implements EventSubscriberInterface
     {
         // Try to add new host.
         // Get domain (Located at: [1]).
-        $parts = explode('.', $config['mailer_mailgun_new_host']);
+        $parts = explode('.', $config['mailer_mailgun_new_host'], 2);
         if (count($parts) < 2) {
             // @todo: Trigger error in the future.
             return $config;
@@ -49,7 +49,7 @@ class ConfigSubscriber implements EventSubscriberInterface
 
     private function getHostDomain($host)
     {
-        return explode('.', $host)[1];
+        return explode('.', $host, 2)[1];
     }
 
     /**
