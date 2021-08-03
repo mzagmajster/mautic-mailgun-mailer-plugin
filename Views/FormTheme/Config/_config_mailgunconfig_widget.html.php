@@ -81,7 +81,12 @@ foreach ($fieldNames as $name) {
         <h3 class="panel-title"><?php echo sprintf('Config for Domain: %s', $domain); ?></h3>
     </div>
     <div class="panel-body">
-        
+        <div class="row">
+            <div class="col-md-6">
+                <?php echo $view['form']->row($form->children[$accountKey]['delete']); ?>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-md-6">
                 <?php echo $view['form']->row($form->children[$accountKey]['host']); ?>

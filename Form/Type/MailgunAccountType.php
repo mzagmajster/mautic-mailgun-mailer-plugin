@@ -14,7 +14,7 @@ namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 use Mautic\CoreBundle\Form\DataTransformer\ArrayStringTransformer;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Validator\Constraints\NotBlank;
@@ -66,6 +66,21 @@ class MailgunAccountType extends AbstractType
                     ]),*/
                 ],
                 'data' => $options['data']['api_key'],
+            ]
+        );
+
+        $builder->add(
+            'delete',
+            CheckboxType::class,
+            [
+                'label'      => 'mautic.mailgunmailer.form.new.delete',
+                'label_attr' => [
+                    'class' => 'control-label',
+                ],
+                'attr' => [
+                    'class' => '',
+                ],
+                'data' => false,
             ]
         );
     }

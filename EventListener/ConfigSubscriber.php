@@ -100,7 +100,13 @@ class ConfigSubscriber implements EventSubscriberInterface
 
             $accountDetails                             = $config[$k];
             $domain                                     = $this->getHostDomain($config[$k]['host']);
-            $config['mailer_mailgun_accounts'][$domain] = $accountDetails;
+
+            // Delete or save account details.
+            if (isset($config[$k]['delete']) && true === $config[$k]['delete']) {
+                unset($config['mailer_mailgun_accounts'][$domain]);
+            } else {
+                $config['mailer_mailgun_accounts'][$domain] = $accountDetails;
+            }
 
             unset($config[$k]);
         }
