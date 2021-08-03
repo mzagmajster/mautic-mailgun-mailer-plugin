@@ -61,6 +61,7 @@ return [
                     '%mautic.mailer_mailgun_batch_recipient_count%',
                     '%mautic.mailer_mailgun_webhook_signing_key%',
                     'monolog.logger.mautic',
+                    'mautic.helper.core_parameters',
                 ],
                 'methodCalls' => [
                     'setApiKey' => ['%mautic.mailer_api_key%'],

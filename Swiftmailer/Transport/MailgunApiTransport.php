@@ -3,6 +3,7 @@
 namespace MauticPlugin\MauticMailgunMailerBundle\Swiftmailer\Transport;
 
 use GuzzleHttp\Client;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\EmailBundle\Swiftmailer\Transport\AbstractTokenArrayTransport;
 use Mautic\EmailBundle\Swiftmailer\Transport\CallbackTransportInterface;
@@ -54,50 +55,94 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      */
     private $webhookSigningKey;
 
-    public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger)
+    private $accountDomain;
+
+    private $accountConfig;
+
+    private $coreParametersHelper;
+
+    private function setAccountConfig($email)
     {
-        $this->transportCallback   = $transportCallback;
-        $this->client              = $client;
-        $this->translator          = $translator;
-        $this->maxBatchLimit       = $maxBatchLimit;
-        $this->batchRecipientCount = $batchRecipientCount ?: 0;
-        $this->webhookSigningKey   = $webhookSigningKey;
-        $this->logger              = $logger;
+        $parts = explode('@', $email);
+
+        // $parts[1] should contain top level domain.
+        $this->accountDomain = $parts[1];
+        $this->accountConfig = $this->coreParametersHelper->get('mailer_mailgun_accounts');
+
+        if (isset($this->accountConfig[$this->accountDomain])) {
+            $this->accountConfig = $this->accountConfig[$this->accountDomain];
+        } else {
+            // Config not found.
+            $this->accountDomain = null;
+            $this->accountConfig = [];
+        }
+
+        return $this;
     }
 
-    public function setApiKey(?string $apiKey): void
+    public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger, CoreParametersHelper $coreParametersHelper)
+    {
+        $this->transportCallback    = $transportCallback;
+        $this->client               = $client;
+        $this->translator           = $translator;
+        $this->maxBatchLimit        = $maxBatchLimit;
+        $this->batchRecipientCount  = $batchRecipientCount ?: 0;
+        $this->webhookSigningKey    = $webhookSigningKey;
+        $this->accountDomain        = null;
+        $this->accountConfig        = [];
+        $this->logger               = $logger;
+        $this->coreParametersHelper = $coreParametersHelper;
+    }
+
+    public function setApiKey(?string $apiKey)
     {
         $this->apiKey = $apiKey;
+
+        return $this;
     }
 
-    public function getApiKey()
+    public function getApiKey(): string
     {
+        if (null !== $this->accountDomain) {
+            return $this->accountConfig['api_key'];
+        }
+
+        // Use value from Email Settings.
         return $this->apiKey;
     }
 
-    public function setDomain(?string $domain): void
+    public function setDomain(?string $domain)
     {
         $this->domain = $domain;
+
+        return $this;
     }
 
-    public function getDomain()
+    public function getDomain(): string
     {
+        if (null !== $this->accountDomain) {
+            return $this->accountConfig['host'];
+        }
+
+        // Use value from Email Settings.
         return $this->domain;
     }
 
-    public function setRegion(?string $region): void
+    public function setRegion(?string $region)
     {
         $this->region = $region;
+
+        return $this;
     }
 
-    public function getRegion()
+    public function getRegion(): string
     {
         return $this->region;
     }
 
     public function start(): void
     {
-        if (empty($this->apiKey)) {
+        if (empty($this->getApiKey())) {
             $this->throwException($this->translator->trans('mautic.email.api_key_required', [], 'validators'));
         }
 
@@ -123,6 +168,11 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             }
         }
 
+        // Fully initialize instance to use Mailgun-multi account feature.
+        $from      = $message->getFrom();
+        $fromEmail = current(array_keys($from));
+        $this->setAccountConfig($fromEmail);
+
         try {
             $count = $this->getBatchRecipientCount($message);
 
@@ -134,11 +184,11 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                 $payload['v:CUSTOMID'] = (int) $preparedMessage['headers']['TOTTGROUPID'];
             }
 
-            $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->domain));
+            $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->getDomain()));
             $response = $this->client->post(
                 'https://'.$endpoint,
                 [
-                    'auth'        => ['api', $this->apiKey, 'basic'],
+                    'auth'        => ['api', $this->getApiKey(), 'basic'],
                     'headers'     => $preparedMessage['headers'],
                     'form_params' => $payload,
                 ]
@@ -294,7 +344,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
     private function getEndpoint(): string
     {
-        return str_replace('%region_dot%', 'us' !== ($this->region ?: 'us') ? $this->region.'.' : '', $this->host);
+        return str_replace('%region_dot%', 'us' !== ($this->getRegion() ?: 'us') ? $this->getRegion().'.' : '', $this->host);
     }
 
     private function getMessage($message): array
