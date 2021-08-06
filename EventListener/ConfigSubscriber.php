@@ -25,17 +25,17 @@ class ConfigSubscriber implements EventSubscriberInterface
      */
     private $coreParametersHelper;
 
-    private function addNewMailgunAccount($config)
+    /**
+     * Adds New Mailgun Account.
+     *
+     * If config for email domain already exists it will get overwritten.
+     *
+     * @param void
+     */
+    private function addNewMailgunAccount(&$currentConfig, &$config)
     {
-        // Try to add new host.
-        // Get domain (Located at: [1]).
-        $parts = explode('.', $config['mailer_mailgun_new_host'], 2);
-        if (count($parts) < 2) {
-            // @todo: Trigger error in the future.
-            return $config;
-        }
-
-        $config['mailer_mailgun_accounts'][$parts[1]] = [
+        $emailDomain                 = $this->getEmailDomain($config['mailer_mailgun_new_host']);
+        $currentConfig[$emailDomain] = [
                 'host'    => $config['mailer_mailgun_new_host'],
                 'api_key' => $config['mailer_mailgun_new_api_key'],
         ];
@@ -43,13 +43,23 @@ class ConfigSubscriber implements EventSubscriberInterface
             $config['mailer_mailgun_new_host'],
             $config['mailer_mailgun_new_api_key']
         );
-
-        return $config;
     }
 
-    private function getHostDomain($host)
+    private function getEmailDomain($host)
     {
-        return explode('.', $host, 2)[1];
+        $count = \substr_count($host, '.');
+        if (1 == $count) {
+            return $host;
+        }
+
+        $parts = explode('.', $host, 2);
+
+        return $parts[1];
+    }
+
+    public function __construct(CoreParametersHelper $coreParametersHelper)
+    {
+        $this->coreParametersHelper = $coreParametersHelper;
     }
 
     /**
@@ -83,32 +93,48 @@ class ConfigSubscriber implements EventSubscriberInterface
 
         $config = $event->getConfig('mailgunconfig');
 
-        if (!isset($config['mailer_mailgun_accounts'])) {
-            $config['mailer_mailgun_accounts'] = [];
-        }
+        $currentConfig = $this->coreParametersHelper->get('mailer_mailgun_accounts', []);
 
         if (!empty($config['mailer_mailgun_new_host']) && !empty($config['mailer_mailgun_new_api_key'])) {
-            $config = $this->addNewMailgunAccount($config);
+            $this->addNewMailgunAccount($currentConfig, $config);
         }
 
         // Fix the config structure of existing accounts.
         $keys = \array_keys($config);
+
         foreach ($keys as $k) {
             if (false === \strpos($k, 'mailer_mailgun_account_')) {
                 continue;
             }
 
             $accountDetails                             = $config[$k];
-            $domain                                     = $this->getHostDomain($config[$k]['host']);
+            $domain                                     = $this->getEmailDomain($accountDetails['host']);
+            if (0 === strpos($accountDetails['api_key'], '***')) {
+                // Api key was not updated, make sure you save the correct string to config.
+                $accountDetails['api_key'] = $currentConfig[$domain]['api_key'];
+            }
 
             // Delete or save account details.
-            if (isset($config[$k]['delete']) && true === $config[$k]['delete']) {
-                unset($config['mailer_mailgun_accounts'][$domain]);
+            if (isset($config[$k]['delete']) && true === $config[$k]['delete'] && isset($currentConfig[$domain])) {
+                unset($currentConfig[$domain]);
+                unset($config[$k]);
             } else {
-                $config['mailer_mailgun_accounts'][$domain] = $accountDetails;
+                if (empty($accountDetails['delete'])) {
+                    unset($accountDetails['delete']);
+                }
+
+                $currentConfig[$domain] = $accountDetails;
             }
 
             unset($config[$k]);
+        }
+
+        // Set Mailgun Accounts.
+        $config['mailer_mailgun_accounts'] = $currentConfig;
+
+        // Global signing key is not updated.
+        if (isset($config['mailer_mailgun_webhook_signing_key']) && 0 === strpos($config['mailer_mailgun_webhook_signing_key'], '***')) {
+            $config['mailer_mailgun_webhook_signing_key'] = $this->coreParametersHelper->get('mailer_mailgun_webhook_signing_key', '');
         }
 
         $event->setConfig($config, 'mailgunconfig');

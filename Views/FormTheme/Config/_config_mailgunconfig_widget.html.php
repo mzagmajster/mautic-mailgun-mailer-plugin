@@ -75,7 +75,7 @@ foreach ($fieldNames as $name) {
 <!-- begin: Mailgun Accounts -->
 <?php foreach ($domainAccounts as $accountKey) { ?>
     
-    <?php $domain = explode('.', $form->children[$accountKey]['host']->vars['value'], 2)[1]; ?>
+    <?php $domain = $form->children[$accountKey]['host']->vars['value']; ?>
     <div class="panel panel-primary">
     <div class="panel-heading">
         <h3 class="panel-title"><?php echo $view['translator']->trans('mautic.mailgunmailer.domain_config').$domain; ?></h3>

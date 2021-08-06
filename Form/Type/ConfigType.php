@@ -85,6 +85,13 @@ class ConfigType extends AbstractType
             ]
         );
 
+        $webhookSigningKey = $options['data']['mailer_mailgun_webhook_signing_key'];
+        if (strlen($webhookSigningKey) > 4) {
+            $webhookSigningKey = '***'.substr($webhookSigningKey, -3, 4);
+        } else {
+            $webhookSigningKey = '***';
+        }
+
         $builder->add(
             'mailer_mailgun_webhook_signing_key',
             TextType::class,
@@ -100,6 +107,7 @@ class ConfigType extends AbstractType
                         'message' => 'mautic.core.value.required',
                     ]),
                 ],
+                'data' => $webhookSigningKey,
             ]
         );
 

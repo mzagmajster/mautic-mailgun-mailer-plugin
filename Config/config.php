@@ -33,7 +33,10 @@ return [
 
         'events' => [
             'mautic.mailgun.subscriber.config' => [
-                'class' => \MauticPlugin\MauticMailgunMailerBundle\EventListener\ConfigSubscriber::class,
+                'class'     => \MauticPlugin\MauticMailgunMailerBundle\EventListener\ConfigSubscriber::class,
+                'arguments' => [
+                    'mautic.helper.core_parameters',
+                ],
             ],
         ],
 

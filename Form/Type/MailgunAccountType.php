@@ -52,7 +52,7 @@ class MailgunAccountType extends AbstractType
         $apiKey = '';
 
         if (is_string($options['data']['api_key']) && strlen($options['data']['api_key']) > 4) {
-            $apiKey = '***'.substr($options['data']['api_key'], -1, 4);
+            $apiKey = '***'.substr($options['data']['api_key'], -3, 4);
         }
         $builder->add(
             'api_key',
