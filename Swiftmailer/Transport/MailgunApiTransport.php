@@ -137,6 +137,10 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
     public function getRegion(): string
     {
+        if (null !== $this->accountDomain) {
+            return $this->accountConfig['region'];
+        }
+
         return $this->region;
     }
 

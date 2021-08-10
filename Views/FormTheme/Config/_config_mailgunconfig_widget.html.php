@@ -89,6 +89,12 @@ foreach ($fieldNames as $name) {
 
         <div class="row">
             <div class="col-md-6">
+                <?php echo $view['form']->row($form->children[$accountKey]['region']); ?>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
                 <?php echo $view['form']->row($form->children[$accountKey]['host']); ?>
             </div>
         </div>
@@ -98,7 +104,6 @@ foreach ($fieldNames as $name) {
                 <?php echo $view['form']->row($form->children[$accountKey]['api_key']); ?>
             </div>
         </div>
-
 
     </div>
 </div> <!-- end: Mailgun Accounts  -->

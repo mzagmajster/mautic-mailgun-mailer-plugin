@@ -21,11 +21,11 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class MailgunAccountType extends AbstractType
 {
-    private $coreParametersHelper;  // not used yet
+    private $coreParametersHelper;
 
-    public function __construct()
+    public function __construct(CoreParametersHelper $coreParametersHelper)
     {
-        $this->coreParametersHelper = null;
+        $this->coreParametersHelper = $coreParametersHelper;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options)
@@ -86,6 +86,29 @@ class MailgunAccountType extends AbstractType
                     'class' => '',
                 ],
                 'data' => false,
+            ]
+        );
+
+        $region = $options['data']['region'] ?? '';
+        if (!strlen($region)) {
+            $region = $this->coreParametersHelper->get('mailer_mailgun_region');
+        }
+        $builder->add(
+            'region',
+            TextType::class,
+            [
+                'label'      => 'mautic.mailgunmailer.form.new.region',
+                'label_attr' => ['class' => 'control-label'],
+                'attr'       => [
+                    'class'   => 'form-control',
+                    // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
+                    ],
+                'constraints' => [
+                    /*new NotBlank([
+                        'message' => 'mautic.core.value.required',
+                    ]),*/
+                ],
+                'data' => $region,
             ]
         );
     }

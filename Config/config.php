@@ -20,7 +20,9 @@ return [
         'forms' => [
             'mautic.form.type.mailgun.account' => [
                 'class'     => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\MailgunAccountType::class,
-                'arguments' => [],
+                'arguments' => [
+                    'mautic.helper.core_parameters',
+                ],
             ],
 
             'mautic.form.type.mailgun.config' => [
