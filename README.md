@@ -1,44 +1,98 @@
 # Mailgun API plugin for Mautic v3
 
-## Instalation
- - upload the contents in this repo to Mautic instalation `plugins/MauticMailgunMailerBundle`
- - change zone if needed, go to plugins/MauticMailgunMailerBundle/Config/config.php file and change mailer_mailgun_region parameter(us by default or eu)
- - if you want to change batch send email limit, go to plugins/MauticMailgunMailerBundle/Config/config.php file and change mailer_mailgun_batch_recipient_count parameter to needed number of batch count
- - to receive webhooks, add your api key to config, go to plugins/MauticMailgunMailerBundle/Config/config.php file and change mailer_mailgun_webhook_signing_key to your webhook api key from mailgun admin panel
- - remove cache `sudo rm -rf var/cache/*`
- - go to mautic settings > plugins > click `Install / Upgrade Plugin`
- - done.
- 
- ## Usage
- 
- - Choose Mailgun Api as the mail service, in Mautic mail configuration > Email Settings.
- 
- Enter yours:
- - host(is domain): From your admin panel in Mailgin Api
- - API Key From your admin panel in Mailgin Api
+Plugin provides integration with Mailgun so you can send email messages from Mautic via API using your domains.
 
-### Add webhook URL to mailgun
+**Main Features**
 
-Add `https://mautic.loc/mailer/mailgun_api/callback` in the mailgun webhook for your selected events:
-- permanent failure
-- spam complaints
-- temporary failure
-- unsubscribes
+- Sending emails via Mailgun API.
+- Multi-domains configuration.
 
-Now your Mautic will be able to send through mailgun API and track email events such as bounce, failed, unsubscribe, spam according to the webhook you set in mailgun.
+### Prerequisites
 
-Mailgun attachments in process.....
+* Project was tested on Mautic 3.3.3
+* During development having composer 1 setup can be handy to run scripts in ```composer.json```.
 
-### Mailgun API plugin for Mautic v2
-To use mailgun api plugin for Mautic V2, switch to branch "V2" and download plugin.
+### Installing
 
-### Mailgun SMTP
-If you need to send messages with mailgun smtp, see:
-[Mailgun plugin for Mautic (AFMailgun)](https://github.com/azamuddin/mautic-mailgun-plugin "Mailgun plugin for Mautic (AFMailgun)")
+Move to plugins directory of your Mautic installation & clone repository.
 
+```
+cd <mautic-dir>/plugins
+git clone <repo-url> MauticMailgunMailerBundle
+cd MauticMailgunMailerBundle
+composer install
+```
 
-## Author
+Create plugin enviorment file to specifiy your global config. Parameters for configruation can be found in your Mailgun Account.
 
-Stanislav Denysenko
+```
+cp plugin-env.php.example plugin-env.php
+# edit plugin-env.php with values from your account.
+```
 
-stascrack@gmail.com
+Install/reload the plugin
+
+```
+cd <mautic-dir>
+rm -rf var/cache/dev/* var/cache/prod/*
+php bin/console mautic:plugins:install --env=dev  # Use mautic:plugins:relaod --env=dev for update
+```
+
+## Running the tests
+
+[todo]
+
+### Coding style & Syntax Check
+
+Coding style can be checked and fixed with the following commands
+
+```
+composer lint  # Syntax Check
+composer checkcs  # Code style check
+composer fixcs  # Code style fix
+```
+
+## Deployment
+
+Pretty much the same as installing procedure only make sure you use ```--env=prod``` switch when installing on production.
+
+## Changelog
+
+[todo]
+
+## Documentation
+
+* Choose Mailgun Api as the mail service, in Mautic Configuration > Email Settings. Enter default host (domain) and api key. The details you set on this tab will be used if configuration for specific domain cannot be found.
+* Which of your domains will be used by this plugin to send the message depends on from field of your email.
+* You can add more domains and api keys on Mailgun-multi Domains tab in Mautic Configuration.
+* You should be able to edit all fields for specific domain **with the exception of host**. If you want to edit host field you will have to delete current configuration and add new one.
+
+**Always double check that plugin is selecting expected Mailgun domain when you add new Mailgun host.**
+
+## Built With
+
+* [Mautic](hhttps://github.com/mautic/mautic) - Marketing Automation Tool
+* [Composer 1](https://getcomposer.org/) - Dependency Management
+
+## Contributing
+
+* If you have a suggestion for the feature or improvement consider opening an issue on GitHub (just make sure the same issue does not already exists).
+* If you want, you can open a pull request and I will make an effort to merge it.
+* Finally if this project was helpful to you **consider supporting it with a donation** via [PayPal](https://paypal.me/maticzagmajster). **Thank you!**
+
+## Versioning
+
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the tags on this repository. 
+
+## Authors
+
+This project was adapated & is maintained by [Matic Zagmajster](http://maticzagmajster.ddns.net/). For more information please see ```AUTHORS``` file.
+
+## License
+
+This project is licensed under the GPL-3.0 License see the ```LICENSE``` file for details.
+
+## Acknowledgments
+
+* I would like to thank colleagues at [Smart Octopus Solutions](http://sos-sw.com/) for guidance on this project.
+
