@@ -82,7 +82,7 @@ Pretty much the same as installing procedure only make sure you use ```--env=pro
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the tags on this repository. 
+[todo]
 
 ## Authors
 
