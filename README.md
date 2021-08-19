@@ -90,7 +90,7 @@ Pretty much the same as installing procedure only make sure you use ```--env=pro
 
 ## Authors
 
-This project was adapated & is maintained by [Matic Zagmajster](http://maticzagmajster.ddns.net/). For more information please see ```AUTHORS``` file.
+This project was adapated & is maintained by [Matic Zagmajster](http://maticzagmajster.ddns.net/) in collaboration with [Smart Octopus Solutions](http://sos-sw.com/). For more information please see ```AUTHORS``` file.
 
 ## License
 
