@@ -63,6 +63,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
     private function setAccountConfig($email)
     {
+        $email = strtolower($email);
         $parts = explode('@', $email);
 
         // $parts[1] should contain top level domain.
