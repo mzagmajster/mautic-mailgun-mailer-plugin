@@ -176,6 +176,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         // Fully initialize instance to use Mailgun-multi account feature.
         $from      = $message->getFrom();
         $fromEmail = current(array_keys($from));
+        $this->logger->notice('From email for Mailgun multi config: '.$fromEmail);
         $this->setAccountConfig($fromEmail);
 
         try {
