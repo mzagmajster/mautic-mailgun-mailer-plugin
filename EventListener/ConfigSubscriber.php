@@ -38,7 +38,7 @@ class ConfigSubscriber implements EventSubscriberInterface
         $currentConfig[$emailDomain] = [
                 'host'    => $config['mailer_mailgun_new_host'],
                 'api_key' => $config['mailer_mailgun_new_api_key'],
-                'region'  => $config['region'],  // Initialize with gloabl region setting.
+                'region'  => $config['mailer_mailgun_region'],  // Initialize with gloabl region setting.
         ];
         unset(
             $config['mailer_mailgun_new_host'],
