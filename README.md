@@ -35,7 +35,7 @@ Install/reload the plugin
 ```
 cd <mautic-dir>
 rm -rf var/cache/dev/* var/cache/prod/*
-php bin/console mautic:plugins:install --env=dev  # Use mautic:plugins:relaod --env=dev for update
+php bin/console mautic:plugins:install --env=dev  # Use mautic:plugins:reload --env=dev for update
 ```
 
 ## Running the tests
@@ -66,6 +66,10 @@ Pretty much the same as installing procedure only make sure you use ```--env=pro
 * Which of your domains will be used by this plugin to send the message depends on from field of your email.
 * You can add more domains and api keys on Mailgun-multi Domains tab in Mautic Configuration.
 * You should be able to edit all fields for specific domain **with the exception of host**. If you want to edit host field you will have to delete current configuration and add new one.
+* To ensure that bounced emails are properly showed on Mautic graphs make sure you add custom header with name: ```TOTTGROUPID``` value of this field must be equivalent to email id (you can see email id in the link when you open specific record from Channels > Emails list). See the image below for an example.
+
+![image](https://user-images.githubusercontent.com/18140846/130037530-28a73dec-6947-481a-aac2-5a24499102b3.png)
+
 
 **Always double check that plugin is selecting expected Mailgun domain when you add new Mailgun host.**
 
@@ -86,7 +90,7 @@ Pretty much the same as installing procedure only make sure you use ```--env=pro
 
 ## Authors
 
-This project was adapated & is maintained by [Matic Zagmajster](http://maticzagmajster.ddns.net/). For more information please see ```AUTHORS``` file.
+This project was adapated & is maintained by [Matic Zagmajster](http://maticzagmajster.ddns.net/) in collaboration with [Smart Octopus Solutions](http://sos-sw.com/). For more information please see ```AUTHORS``` file.
 
 ## License
 
