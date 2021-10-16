@@ -81,6 +81,11 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return $this;
     }
 
+    private function isAccountConfigLoaded()
+    {
+        return null !== $this->accountDomain;
+    }
+
     public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger, CoreParametersHelper $coreParametersHelper)
     {
         $this->transportCallback    = $transportCallback;
@@ -176,8 +181,18 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         // Fully initialize instance to use Mailgun-multi account feature.
         $from      = $message->getFrom();
         $fromEmail = current(array_keys($from));
+        $oldName   = $from[$fromEmail];
         $this->logger->notice('From email for Mailgun multi config: '.$fromEmail);
         $this->setAccountConfig($fromEmail);
+        if (!$this->isAccountConfigLoaded()) {
+            // We are sending email using domain that is not whitelisted by plugin configuration.
+            $newFromEmail = $this->coreParametersHelper->get('mailer_from_email');
+            $newFromName  = $this->coreParametersHelper->get('mailer_from_name');
+
+            // Swift_Mime_SimpleMessage
+            $newFromName = $oldName.' via '.$newFromName;
+            $message->setFrom([$newFromEmail], $newFromName);
+        }
 
         try {
             $count = $this->getBatchRecipientCount($message);
