@@ -324,6 +324,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             }
 
             $channelId = null;
+            $this->logger->notice(serialize($event));
             if (isset($event['user-variables']['CUSTOMID'])) {
                 $event['CustomID'] = $event['user-variables']['CUSTOMID'];
 
