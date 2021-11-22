@@ -287,6 +287,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
      */
     public function processCallbackRequest(Request $request)
     {
+        $this->logger->notice('Start processCallbackRequest');
         $postData = json_decode($request->getContent(), true);
 
         if (is_array($postData) && isset($postData['event-data'])) {
@@ -300,6 +301,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         }
 
         foreach ($events as $event) {
+            $this->logger->notice('Event '.$event['event']);
             if (!in_array($event['event'], ['bounce', 'rejected', 'complained', 'unsubscribed', 'permanent_fail', 'failed'])) {
                 continue;
             }
@@ -343,6 +345,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
                 $this->transportCallback->addFailureByAddress($event['recipient'], $reason, $type, $channelId);
             }
         }
+
+        $this->logger->notice('End processCallbackRequest');
     }
 
     /**
