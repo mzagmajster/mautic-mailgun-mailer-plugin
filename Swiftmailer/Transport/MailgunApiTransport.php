@@ -86,6 +86,18 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return null !== $this->accountDomain;
     }
 
+    private function getEmailChannelId($headers): string
+    {
+        $keys = array_keys($headers);
+        foreach ($keys as $index => $orgKeyName) {
+            if ('x-email-id' == strtolower($orgKeyName)) {
+                return (string) $headers[$orgKeyName];
+            }
+        }
+
+        return '';
+    }
+
     public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger, CoreParametersHelper $coreParametersHelper)
     {
         $this->transportCallback    = $transportCallback;
@@ -200,13 +212,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             $preparedMessage = $this->getMessage($message);
 
             $payload               = $this->getPayload($preparedMessage);
-            $payload['v:CUSTOMID'] = null;
-            if (isset($preparedMessage['headers']['TOTTGROUPID'])) {
-                $payload['v:CUSTOMID'] = (int) $preparedMessage['headers']['TOTTGROUPID'];
-            }
-
-            $endpoint = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->getDomain()));
-            $response = $this->client->post(
+            $endpoint              = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->getDomain()));
+            $response              = $this->client->post(
                 'https://'.$endpoint,
                 [
                     'auth'        => ['api', $this->getApiKey(), 'basic'],
@@ -327,8 +334,8 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
             $channelId = null;
             $this->logger->debug(serialize($event));
-            if (isset($event['user-variables']['CUSTOMID'])) {
-                $event['CustomID'] = $event['user-variables']['CUSTOMID'];
+            if (isset($event['message']['headers'])) {
+                $event['CustomID'] = $this->getEmailChannelId($event['message']['headers']);
 
                 // Make sure channel ID is always set, so data on graph is displayed correctly.
                 $channelId = (int) $event['CustomID'];
