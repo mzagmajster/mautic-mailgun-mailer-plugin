@@ -48,14 +48,7 @@ class ConfigSubscriber implements EventSubscriberInterface
 
     private function getEmailDomain($host)
     {
-        $count = \substr_count($host, '.');
-        if (1 == $count) {
-            return $host;
-        }
-
-        $parts = explode('.', $host, 2);
-
-        return $parts[1];
+        return $host;
     }
 
     public function __construct(CoreParametersHelper $coreParametersHelper)
