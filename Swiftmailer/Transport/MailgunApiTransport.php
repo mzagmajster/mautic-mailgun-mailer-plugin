@@ -425,6 +425,20 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             'html'    => $message['html'],
             'text'    => $message['text'],
         ];
+        if (isset($message['replyTo'])) {
+            $replyToName = $message['replyTo']['name'] ?? '';
+            $replyToEmail = $message['replyTo']['email'];
+
+            if (!empty($replyToName)) {
+                $replyTo = sprintf('%s <%s>', $replyToName, $replyToEmail);
+            }
+            else {
+                $replyTo = $replyToEmail;
+            }
+
+            $payload['h:Reply-To'] = $replyTo;
+        }
+        
         if (count($message['recipient-variables'])) {
             $payload['recipient-variables'] = json_encode($message['recipient-variables']);
         }
