@@ -11,7 +11,6 @@ use Mautic\LeadBundle\Entity\DoNotContact;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Translation\TranslatorInterface;
 
 class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_Transport, CallbackTransportInterface
@@ -426,19 +425,18 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             'text'    => $message['text'],
         ];
         if (isset($message['replyTo'])) {
-            $replyToName = $message['replyTo']['name'] ?? '';
+            $replyToName  = $message['replyTo']['name'] ?? '';
             $replyToEmail = $message['replyTo']['email'];
 
             if (!empty($replyToName)) {
                 $replyTo = sprintf('%s <%s>', $replyToName, $replyToEmail);
-            }
-            else {
+            } else {
                 $replyTo = $replyToEmail;
             }
 
             $payload['h:Reply-To'] = $replyTo;
         }
-        
+
         if (count($message['recipient-variables'])) {
             $payload['recipient-variables'] = json_encode($message['recipient-variables']);
         }

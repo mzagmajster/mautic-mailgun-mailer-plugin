@@ -1,12 +1,4 @@
 <?php
-/*
- * @copyright   2020. All rights reserved
- * @author      Stanislav Denysenko<stascrack@gmail.com>
- *
- * @link        https://github.com/stars05
- *
- * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
- */
 
 require_once MAUTIC_ROOT_DIR.'/plugins/MauticMailgunMailerBundle/.plugin-env.php';
 
