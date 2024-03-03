@@ -4,7 +4,7 @@ require_once MAUTIC_ROOT_DIR.'/plugins/MauticMailgunMailerBundle/.plugin-env.php
 
 return [
     'name'        => 'MailgunMailer',
-    'description' => 'Integrate Swiftmailer transport for Mailgun API',
+    'description' => 'Integrate PHP Mailer transport for Mailgun API',
     'author'      => 'Stanislav Denysenko',
     'version'     => '1.0.0',
 
@@ -25,55 +25,29 @@ return [
             ],
         ],
 
-        'events' => [
+        /*'events' => [
             'mautic.mailgun.subscriber.config' => [
                 'class'     => \MauticPlugin\MauticMailgunMailerBundle\EventListener\ConfigSubscriber::class,
                 'arguments' => [
                     'mautic.helper.core_parameters',
                 ],
             ],
-        ],
-
-        /*'integrations' => [
-            'mautic.integration.mailgun' => [
-                'class'     => 'MauticPlugin\MauticMailgunMailerBundle\Integration\MailgunMailerIntegration',
-                'tags' => [
-                    'mautic.config_integration',
-                ],
-                'arguments' => [
-                    'mautic.helper.integration'
-                ],
-            ],
         ],*/
 
         'other' => [
-            'mautic.transport.mailgun_api' => [
-                'class'        => \MauticPlugin\MauticMailgunMailerBundle\Swiftmailer\Transport\MailgunApiTransport::class,
-                'serviceAlias' => 'swiftmailer.mailer.transport.%s',
+            'mautic.omnivery.transport_factory' => [
+                'class'        => \MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory\MauticMailgunTransportFactory::class,
                 'arguments'    => [
-                    'mautic.email.model.transport_callback',
-                    'mautic.mailgun.guzzle.client',
-                    'translator',
-                    '%mautic.mailer_mailgun_max_batch_limit%',
-                    '%mautic.mailer_mailgun_batch_recipient_count%',
-                    '%mautic.mailer_mailgun_webhook_signing_key%',
+                    'event_dispatcher',
+                    'mautic.omnivery.http.client',
                     'monolog.logger.mautic',
                     'mautic.helper.core_parameters',
                 ],
-                'methodCalls' => [
-                    'setApiKey' => ['%mautic.mailer_api_key%'],
-                    'setDomain' => ['%mautic.mailer_host%'],
-                    'setRegion' => ['%mautic.mailer_mailgun_region%'],
-                ],
-                'tag'          => 'mautic.email_transport',
-                'tagArguments' => [
-                    \Mautic\EmailBundle\Model\TransportType::TRANSPORT_ALIAS => 'mautic.email.config.mailer_transport.mailgun_api',
-                    \Mautic\EmailBundle\Model\TransportType::FIELD_HOST      => true,
-                    \Mautic\EmailBundle\Model\TransportType::FIELD_API_KEY   => true,
-                ],
+                'tag'          => 'mailer.transport_factory',
             ],
-            'mautic.mailgun.guzzle.client' => [
-                'class' => 'GuzzleHttp\Client',
+
+            'mautic.omnivery.http.client' => [
+                'class' => Symfony\Component\HttpClient\NativeHttpClient::class,
             ],
         ],
     ],

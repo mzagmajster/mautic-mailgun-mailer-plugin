@@ -1,6 +1,5 @@
 <?php
 
-
 namespace MauticPlugin\MauticMailgunMailerBundle\EventListener;
 
 use Mautic\ConfigBundle\ConfigEvents;
@@ -60,12 +59,12 @@ class ConfigSubscriber implements EventSubscriberInterface
     }
 
     public function onConfigGenerate(ConfigBuilderEvent $event)
-    {
+    {// @MauticAsset/FormTheme/Config/_config_assetconfig_widget.html.twig
         $event->addForm([
             'bundle'     => 'MailgunMailerBundle',
             'formAlias'  => 'mailgunconfig',
             'formType'   => ConfigType::class,
-            'formTheme'  => 'MauticMailgunMailerBundle:FormTheme\Config',
+            'formTheme'  => '@MauticMailgunMailer/FormTheme/Config/_config_mailgunconfig_widget.html.twig',
             'parameters' => $event->getParametersFromConfig('MauticMailgunMailerBundle'),
         ]);
     }
