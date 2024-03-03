@@ -468,7 +468,12 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         }
 
         $data = json_decode($response->getContent(false), true);
-        $this->logger->error('MailgunApiTransport error response', ['data' => $data]);
+
+        $this->logger->error('MailgunApiTransport error response', [
+            'data'               => $data,
+            'responseContent'    => $response->getContent(false),
+            'responseStatusCode' => $response->getStatusCode(),
+        ]);
 
         throw new HttpTransportException('Error returned by API', $response, $response->getStatusCode());
     }

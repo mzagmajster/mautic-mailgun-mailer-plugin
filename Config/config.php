@@ -9,47 +9,22 @@ return [
     'version'     => '1.0.0',
 
     'services' => [
-        'forms' => [
-            'mautic.form.type.mailgun.account' => [
-                'class'     => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\MailgunAccountType::class,
-                'arguments' => [
-                    'mautic.helper.core_parameters',
-                ],
-            ],
-
-            'mautic.form.type.mailgun.config' => [
-                'class'     => \MauticPlugin\MauticMailgunMailerBundle\Form\Type\ConfigType::class,
-                'arguments' => [
-                    'mautic.helper.core_parameters',
-                ],
-            ],
-        ],
-
-        /*'events' => [
-            'mautic.mailgun.subscriber.config' => [
-                'class'     => \MauticPlugin\MauticMailgunMailerBundle\EventListener\ConfigSubscriber::class,
-                'arguments' => [
-                    'mautic.helper.core_parameters',
-                ],
-            ],
-        ],*/
-
         'other' => [
-            'mautic.omnivery.transport_factory' => [
+            'mautic.mailgun.transport_factory' => [
                 'class'        => \MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory\MauticMailgunTransportFactory::class,
                 'arguments'    => [
                     'event_dispatcher',
-                    'mautic.omnivery.http.client',
+                    'mautic.mailgun.http.client',
                     'monolog.logger.mautic',
                     'mautic.helper.core_parameters',
                 ],
                 'tag'          => 'mailer.transport_factory',
             ],
 
-            'mautic.omnivery.http.client' => [
+            'mautic.mailgun.http.client' => [
                 'class' => Symfony\Component\HttpClient\NativeHttpClient::class,
             ],
-        ],
+        ],  // end: other
     ],
 
     'parameters' => [

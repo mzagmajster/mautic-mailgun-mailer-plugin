@@ -2,6 +2,7 @@
 
 namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -10,9 +11,9 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class ConfigType extends AbstractType
 {
-    private $coreParametersHelper;
+    private coreParametersHelper $coreParametersHelper;
 
-    public function __construct($coreParametersHelper)
+    public function __construct(CoreParametersHelper $coreParametersHelper)
     {
         $this->coreParametersHelper = $coreParametersHelper;
     }
