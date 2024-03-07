@@ -83,8 +83,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     /**
      * This is actually selected account domain.
      *
-     * @todo Rename to $selectedAccount.
-     *
      * @var array
      * */
     private $selectedAccount;
