@@ -147,6 +147,15 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             'o:tracking' => 'yes',
         ];
 
+        /**
+         * @todo Find a better approach for this.
+         */
+        $this->region = 'eu';
+        if ($this->host == 'api.mailgun.net') {
+            $this->region = 'us';
+        }
+
+
         $this->logger          = $logger;
 
         parent::__construct($client, $dispatcher, $logger);
@@ -181,7 +190,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return $this->domain;
     }
 
-    public function getRegion(): string
+    public function getRegion(): ?string
     {
         if (null !== $this->accountDomain) {
             return $this->selectedAccount['region'];
