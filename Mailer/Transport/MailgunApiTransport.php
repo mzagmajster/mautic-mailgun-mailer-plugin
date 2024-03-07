@@ -87,7 +87,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
      *
      * @var array
      * */
-    private $accountConfig;
+    private $selectedAccount;
 
     /**
      * @var string|null
@@ -98,6 +98,29 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
      * @var array
      */
     private $mauticTransportOptions;
+
+    private function selectAccount($email)
+    {
+        $email = strtolower($email);
+        $parts = explode('@', $email);
+
+        // $parts[1] should contain top level domain.
+        $this->accountDomain = $parts[1];
+        if (isset($this->accounts[$this->accountDomain])) {
+            $this->selectedAccount = $this->accounts[$this->accountDomain];
+        } else {
+            // Config not found, which means we will use default config.
+            $this->accountDomain   = null;
+            $this->selectedAccount = [];
+        }
+
+        return $this;
+    }
+
+    private function isAccountSelected()
+    {
+        return null !== $this->accountDomain;
+    }
 
     public function __construct(
         string $host = '',
@@ -119,9 +142,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $this->webhookSigningKey      = $webhookSigningKey;
         $this->accounts               = $accounts;
 
-        $this->accountConfig          = [];
-        $this->accountDomain          = null;
-        $this->mauticTransportOptions = [
+        $this->selectedAccount          = [];
+        $this->accountDomain            = null;
+        $this->mauticTransportOptions   = [
             'o:testmode' => 'no',
             'o:tracking' => 'yes',
         ];
@@ -140,8 +163,48 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         );
     }
 
+    public function getKey(): string
+    {
+        if (null !== $this->accountDomain) {
+            return $this->selectedAccount['api_key'];
+        }
+
+        // Use value from Email Settings.
+        return $this->key;
+    }
+
+    public function getDomain(): string
+    {
+        if (null !== $this->accountDomain) {
+            return $this->selectedAccount['host'];
+        }
+
+        // Use value from Email Settings.
+        return $this->domain;
+    }
+
+    public function getRegion(): string
+    {
+        if (null !== $this->accountDomain) {
+            return $this->selectedAccount['region'];
+        }
+
+        return $this->region;
+    }
+
     private function getEndpoint(): ?string
     {
+        switch ($this->getRegion()) {
+            case 'eu':
+                return 'api.eu.mailgun.net';
+                break;
+            case 'us':
+                return 'api.mailgun.net';
+                break;
+            default:
+                break;
+        }
+
         return $this->host;
     }
 
@@ -339,6 +402,13 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         );
     }
 
+    private function mauticGetFromEmail(SentMessage $sentMessage)
+    {
+        $email = $sentMessage->getOriginalMessage();
+
+        return $this->mauticStringifyAddresses($email->getFrom());
+    }
+
     private function mauticGetPayload(SentMessage $sentMessage, array $recipientMeta): array
     {
         $email = $sentMessage->getOriginalMessage();
@@ -493,6 +563,14 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             }
 
             // For sending all other emails (segments, example emails, direct emails, etc.)
+            $fromEmail = $this->mauticGetFromEmail($sentMessage);
+            $this->selectAccount($fromEmail);
+            if (!$this->isAccountSelected()) {
+                /**
+                 * @todo Handle the case where account is not selected
+                 * (do not use coreParameters helper here).
+                 */
+            }
             $recipientsMeta = $this->mauticGetRecipientData($sentMessage);
             foreach ($recipientsMeta as $recipientMeta) {
                 $payload = $this->mauticGetPayload(
