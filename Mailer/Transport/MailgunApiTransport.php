@@ -151,10 +151,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
          * @todo Find a better approach for this.
          */
         $this->region = 'eu';
-        if ($this->host == 'api.mailgun.net') {
+        if ('api.mailgun.net' == $this->host) {
             $this->region = 'us';
         }
-
 
         $this->logger          = $logger;
 
@@ -166,7 +165,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return sprintf(
             'mautic+mailgun+api://%s?domain=%s',
             $this->getEndpoint(),
-            $this->domain
+            $this->getDomain()
         );
     }
 
@@ -411,7 +410,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
     private function mauticGetFromEmail(SentMessage $sentMessage)
     {
-        $email = $sentMessage->getOriginalMessage();
+        $email     = $sentMessage->getOriginalMessage();
         $fromArray = $email->getFrom();
 
         return count($fromArray) ? $fromArray[0]->getAddress() : '';
@@ -525,14 +524,14 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $endpoint = sprintf(
             '%s/v3/%s/messages',
             $this->getEndpoint(),
-            urlencode($this->domain)
+            urlencode($this->getDomain())
         );
 
         return $this->client->request(
             'POST',
             'https://'.$endpoint,
             [
-                'auth_basic'   => 'api:'.$this->key,
+                'auth_basic'   => 'api:'.$this->getKey(),
                 'headers'      => ['Content-Type: application/x-www-form-urlencoded'],
                 'body'         => $payload,
             ]
