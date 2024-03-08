@@ -412,8 +412,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     private function mauticGetFromEmail(SentMessage $sentMessage)
     {
         $email = $sentMessage->getOriginalMessage();
+        $fromArray = $email->getFrom();
 
-        return $this->mauticStringifyAddresses($email->getFrom());
+        return count($fromArray) ? $fromArray[0]->getAddress() : '';
     }
 
     private function mauticGetPayload(SentMessage $sentMessage, array $recipientMeta): array
