@@ -208,8 +208,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         try {
             $count = $this->getBatchRecipientCount($message);
 
-            $preparedMessage = $this->getMessage($message);
-
+            $preparedMessage       = $this->getMessage($message);
             $payload               = $this->getPayload($preparedMessage);
             $endpoint              = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->getDomain()));
             $response              = $this->client->post(
@@ -435,6 +434,12 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             }
 
             $payload['h:Reply-To'] = $replyTo;
+        }
+
+        // Add all other headers.
+        foreach ($message['headers'] as $headerName => $headerValue) {
+            $newHeaderName = 'h:' . $headerName;
+            $payload[$newHeaderName] = $headerValue;
         }
 
         if (count($message['recipient-variables'])) {
