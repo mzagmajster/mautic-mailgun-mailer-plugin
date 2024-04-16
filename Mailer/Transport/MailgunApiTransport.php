@@ -416,6 +416,24 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return count($fromArray) ? $fromArray[0]->getAddress() : '';
     }
 
+    /**
+     * Replace Mautic Tokens
+     *
+     * We do this in the plugin since we are not able to do it, using Mailgun API endpoint.
+     * 
+     * @param  [type] $messageContent Content of email message
+     * @param  [type] $tokens         Mautic tokens to replace.
+     * @return string Email content with replaced tokens
+     */
+    private function replaceMauticTokens($messageContent, $tokens)
+    {
+        foreach ($tokens as $token => $value) {
+            $messageContent = str_replace($token, $value, $messageContent);
+        }
+
+        return $messageContent;
+    }
+
     private function mauticGetPayload(SentMessage $sentMessage, array $recipientMeta): array
     {
         $email = $sentMessage->getOriginalMessage();
@@ -492,7 +510,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         }
 
         $substitutions = $recipientMeta['meta']['tokens'] ?? [];
-
         return array_merge(
             [
                 'from'          => $this->mauticStringifyAddresses($email->getFrom()),
@@ -501,15 +518,15 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 'cc'            => $this->mauticStringifyAddresses($email->getCc()),
                 'bcc'           => $this->mauticStringifyAddresses($email->getBcc()),
                 'subject'       => $email->getSubject(),
-                'text'          => $text,
-                'html'          => $html,
+                'text'          => $this->replaceMauticTokens($text, $substitutions),
+                'html'          => $this->replaceMauticTokens($html, $substitutions),
 
                 /**
                  * @todo Support for attachments.
                  */
                 /* 'attachment'    => $attachments, */
 
-                'substitutions' => json_encode($substitutions),
+                // 't:variables' => json_encode($substitutions),
                 'callback_url'  => $this->callbackUrl,
             ],
             $oHeaders,
