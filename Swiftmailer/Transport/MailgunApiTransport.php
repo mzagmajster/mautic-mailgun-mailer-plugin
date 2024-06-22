@@ -438,7 +438,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
         // Add all other headers.
         foreach ($message['headers'] as $headerName => $headerValue) {
-            $newHeaderName = 'h:' . $headerName;
+            $newHeaderName           = 'h:'.$headerName;
             $payload[$newHeaderName] = $headerValue;
         }
 
