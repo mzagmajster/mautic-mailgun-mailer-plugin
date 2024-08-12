@@ -22,6 +22,6 @@ return function (ContainerConfigurator $configurator) {
 
     $services->alias(
         'mautic.mailgun.model.transport_callback',
-        \Mautic\EmailBundle\Model\TransportCallback::class
+        Mautic\EmailBundle\Model\TransportCallback::class
     );
 };

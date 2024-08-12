@@ -144,7 +144,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $this->accountDomain            = null;
         $this->mauticTransportOptions   = [
             'o:testmode' => 'no',
-            'o:tracking' => 'yes',
+            'o:tracking' => 'no',
         ];
 
         /**
@@ -417,12 +417,13 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     }
 
     /**
-     * Replace Mautic Tokens
+     * Replace Mautic Tokens.
      *
      * We do this in the plugin since we are not able to do it, using Mailgun API endpoint.
-     * 
+     *
      * @param  [type] $messageContent Content of email message
-     * @param  [type] $tokens         Mautic tokens to replace.
+     * @param  [type] $tokens         Mautic tokens to replace
+     *
      * @return string Email content with replaced tokens
      */
     private function replaceMauticTokens($messageContent, $tokens)
@@ -510,6 +511,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         }
 
         $substitutions = $recipientMeta['meta']['tokens'] ?? [];
+
         return array_merge(
             [
                 'from'          => $this->mauticStringifyAddresses($email->getFrom()),
@@ -601,7 +603,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                     $sentMessage,
                     $recipientMeta
                 );
-
                 $response = $this->mauticGetApiResponse($payload);
                 $this->mauticHandleError($response);
             }

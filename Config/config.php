@@ -11,7 +11,7 @@ return [
     'services' => [
         'other' => [
             'mautic.mailgun.transport_factory' => [
-                'class'        => \MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory\MauticMailgunTransportFactory::class,
+                'class'        => MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory\MauticMailgunTransportFactory::class,
                 'arguments'    => [
                     'event_dispatcher',
                     'mautic.mailgun.http.client',

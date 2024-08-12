@@ -1,6 +1,5 @@
 <?php
 
-
 namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
@@ -30,7 +29,7 @@ class MailgunAccountType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     /*new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -55,7 +54,7 @@ class MailgunAccountType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     /*new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -93,7 +92,7 @@ class MailgunAccountType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     /*new NotBlank([
                         'message' => 'mautic.core.value.required',
