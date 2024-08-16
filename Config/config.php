@@ -13,6 +13,7 @@ return [
             'mautic.mailgun.transport_factory' => [
                 'class'        => MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory\MauticMailgunTransportFactory::class,
                 'arguments'    => [
+                    'service_container',
                     'event_dispatcher',
                     'mautic.mailgun.http.client',
                     'monolog.logger.mautic',

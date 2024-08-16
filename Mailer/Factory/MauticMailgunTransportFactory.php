@@ -12,6 +12,7 @@ use Symfony\Component\Mailer\Transport\AbstractTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @author Matic Zagmajster <maticzagmajster@gmail.com>
@@ -24,11 +25,18 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
     private $coreParametersHelper;
 
     public function __construct(
+        ContainerInterface $container,
         EventDispatcherInterface $dispatcher = null,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null,
-        CoreParametersHelper $coreParametersHelper = null
+        CoreParametersHelper $coreParametersHelper = null,
     ) {
+
+        if (\MAUTIC_ENV === 'dev') {
+            $plgDevLogger = $container->get('monolog.logger.plgdev');
+            $logger = $plgDevLogger ?? $logger;
+        }
+        
         $this->coreParametersHelper = $coreParametersHelper;
 
         parent::__construct(
