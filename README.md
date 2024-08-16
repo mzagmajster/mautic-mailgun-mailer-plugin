@@ -38,13 +38,42 @@ rm -rf var/cache/dev/* var/cache/prod/*
 php bin/console mautic:plugins:install --env=dev  # Use mautic:plugins:reload --env=dev for update
 ```
 
+Optional: Add logger plgdev to log things to separate file for easier dev.
+
+Put the following in config/config_local.php:
+
+```
+<?php
+
+$container->loadFromExtension('monolog', [
+    'channels' => [
+        // Other channels..
+        'plgdev'
+    ],
+    'handlers' => [
+        // Other handlers
+        'plgdev' => [
+            'formatter' => 'mautic.monolog.fulltrace.formatter',
+            'type'      => 'rotating_file',
+            'path'      => '%kernel.logs_dir%/plgdev_%kernel.environment%.php',
+            'level'     => 'debug',
+            'channels'  => [
+                'plgdev',
+            ],
+            'max_files' => 7,
+        ],
+        
+    ],
+]);
+```
+
 ## Running the tests
 
 [todo]
 
 ### Coding style & Syntax Check
 
-Coding style can be checked and fixed with the following commands
+Coding style can be checked and fixed with the following commands. Commands are provided by Mautic core.
 
 ```
 composer lint  # Syntax Check
