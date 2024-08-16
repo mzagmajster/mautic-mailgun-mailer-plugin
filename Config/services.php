@@ -24,4 +24,9 @@ return function (ContainerConfigurator $configurator) {
         'mautic.mailgun.model.transport_callback',
         Mautic\EmailBundle\Model\TransportCallback::class
     );
+
+    $services->alias(
+        'mautic.mailgun.factory.sending_account_settings',
+        MauticPlugin\MauticMailgunMailerBundle\Factory\SendingAccountSettingsFactory::class,
+    );
 };

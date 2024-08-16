@@ -14,6 +14,7 @@ return [
                 'class'        => MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory\MauticMailgunTransportFactory::class,
                 'arguments'    => [
                     'service_container',
+                    'mautic.mailgun.factory.sending_account_settings',
                     'event_dispatcher',
                     'mautic.mailgun.http.client',
                     'monolog.logger.mautic',

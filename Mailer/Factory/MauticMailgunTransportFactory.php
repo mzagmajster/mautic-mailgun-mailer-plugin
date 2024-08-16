@@ -3,16 +3,18 @@
 namespace MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory;
 
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use MauticPlugin\MauticMailgunMailerBundle\Factory\SendingAccountSettingsFactory;
 use MauticPlugin\MauticMailgunMailerBundle\Mailer\Transport\MailgunApiTransport;
+use MauticPlugin\MauticMailgunMailerBundle\Service\AccountProviderService;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Mailer\Exception\InvalidArgumentException;
 use Symfony\Component\Mailer\Exception\UnsupportedSchemeException;
 use Symfony\Component\Mailer\Transport\AbstractTransportFactory;
 use Symfony\Component\Mailer\Transport\Dsn;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @author Matic Zagmajster <maticzagmajster@gmail.com>
@@ -24,20 +26,26 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
      */
     private $coreParametersHelper;
 
+    /**
+     * @var SendingAccountSettingsFactory
+     */
+    private $sendingAccountSettingsFactory;
+
     public function __construct(
         ContainerInterface $container,
+        SendingAccountSettingsFactory $sendingAccountSettingsFactory,
         EventDispatcherInterface $dispatcher = null,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null,
         CoreParametersHelper $coreParametersHelper = null,
     ) {
-
         if (\MAUTIC_ENV === 'dev') {
             $plgDevLogger = $container->get('monolog.logger.plgdev');
-            $logger = $plgDevLogger ?? $logger;
+            $logger       = $plgDevLogger ?? $logger;
         }
-        
-        $this->coreParametersHelper = $coreParametersHelper;
+
+        $this->coreParametersHelper          = $coreParametersHelper;
+        $this->sendingAccountSettingsFactory = $sendingAccountSettingsFactory;
 
         parent::__construct(
             $dispatcher,
@@ -73,6 +81,10 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 throw new InvalidArgumentException('Key or domain not set, cannot create MailgunApiTransport object!');
             }
 
+            $accountProviderService = new AccountProviderService(
+                $this->sendingAccountSettingsFactory->create()
+            );
+
             return new MailgunApiTransport(
                 $host,
                 $key,
@@ -81,6 +93,7 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 $callbackUrl,
                 $webhookSigningKey,
                 $accounts,
+                $accountProviderService,
                 $this->dispatcher,
                 $this->client,
                 $this->logger

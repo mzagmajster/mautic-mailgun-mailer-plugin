@@ -5,6 +5,7 @@ namespace MauticPlugin\MauticMailgunMailerBundle\Mailer\Transport;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
+use MauticPlugin\MauticMailgunMailerBundle\Service\AccountProviderService;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
@@ -37,6 +38,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         'subject',
         'content-type',
     ];
+
+    public const MAUTIC_TEMP_FROM_NAME_HEADER = 'MGTR-From-Name';
 
     /**
      * @var LoggerInterface
@@ -79,6 +82,11 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
      * @var array
      */
     private $accounts;
+
+    /**
+     * @var AccountProviderService
+     */
+    private $accountProviderService;
 
     /**
      * This is actually selected account domain.
@@ -128,6 +136,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         string $callbackUrl = '',
         string $webhookSigningKey = '',
         array $accounts = [],
+        AccountProviderService $accountProviderService = null,
         EventDispatcherInterface $dispatcher = null,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null,
@@ -139,6 +148,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $this->callbackUrl            = $callbackUrl;
         $this->webhookSigningKey      = $webhookSigningKey;
         $this->accounts               = $accounts;
+        $this->accountProviderService = $accountProviderService;
 
         $this->selectedAccount          = [];
         $this->accountDomain            = null;
@@ -296,6 +306,22 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return !(bool) count($metadata);
     }
 
+    private function mauticComposeFromAddressObject(SentMessage $sentMessage)
+    {
+        $email          = $sentMessage->getOriginalMessage();
+        $orgFromAddress = $email->getFrom()[0];
+
+        $fromName = $email->getHeaders()->getHeaderBody(self::MAUTIC_TEMP_FROM_NAME_HEADER);
+        if (null === $fromName) {
+            return $orgFromAddress;
+        }
+
+        return new Address(
+            $orgFromAddress->getAddress(),
+            $fromName
+        );
+    }
+
     private function mauticGetTestMessagePayload(SentMessage $sentMessage): array
     {
         $email = $sentMessage->getOriginalMessage();
@@ -304,9 +330,12 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             throw new TransportException('Message must be an instance of '.MauticMessage::class);
         }
 
-        $toList     = null;
-        $fromList   = null;
-        $subject    = null;
+        $toList      = null;
+        $fromList    = null;
+        $replyToList = null;
+        $ccList      = null;
+        $bccList     = null;
+        $subject     = null;
 
         $text    = $email->getTextBody();
         $html    = $email->getHtmlBody();
@@ -321,6 +350,15 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                     break;
                 case 'to':
                     $toList = $header->getAddresses();
+                    break;
+                case 'reply-to':
+                    $replyToList = $header->getAddresses();
+                    break;
+                case 'cc':
+                    $ccList = $header->getAddresses();
+                    break;
+                case 'bcc':
+                    $bccList = $header->getAddresses();
                     break;
                 case 'subject':
                     $subject = $header->getValue();
@@ -351,7 +389,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $hHeaders = [];
 
         foreach ($headers->all() as $name => $header) {
-            if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS, true)) {
+            // We skip these headers because we set them in a separate fields.
+            if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
                 continue;
             }
 
@@ -393,7 +432,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             [
                 'from'          => $this->mauticStringifyAddresses($fromList),
                 'to'            => $this->mauticStringifyAddresses($toList),
-                'reply_to'      => $this->mauticStringifyAddresses($toList),
+                'reply_to'      => [],
                 'cc'            => [],
                 'bcc'           => [],
                 'subject'       => $subject,
@@ -435,6 +474,16 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return $messageContent;
     }
 
+    private function mauticReadjustHeaders(SentMessage $sentMessage, Address $fixedFromAddress)
+    {
+        $sentMessage->getOriginalMessage()
+            ->getHeaders()
+            ->remove(self::MAUTIC_TEMP_FROM_NAME_HEADER);
+        $sentMessage->getOriginalMessage()->from($fixedFromAddress);
+
+        return $sentMessage;
+    }
+
     private function mauticGetPayload(SentMessage $sentMessage, array $recipientMeta): array
     {
         $email = $sentMessage->getOriginalMessage();
@@ -474,7 +523,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         [$attachments, $inlines, $html] = $this->mauticGetAttachments($email, $html);
 
         foreach ($headers->all() as $name => $header) {
-            if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS, true)) {
+            if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
+                $this->logger->debug('Skipping header ', ['headerName' => $name, 'headerValue' => $header]);
                 continue;
             }
 
@@ -591,13 +641,20 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             // For sending all other emails (segments, example emails, direct emails, etc.)
             $fromEmail = $this->mauticGetFromEmail($sentMessage);
             $this->selectAccount($fromEmail);
+            $acc = $this->accountProviderService->selectedAccount($fromEmail);
             if (!$this->isAccountSelected()) {
                 /**
                  * @todo Handle the case where account is not selected
                  * (do not use coreParameters helper here).
                  */
             }
-            $recipientsMeta = $this->mauticGetRecipientData($sentMessage);
+            $this->logger->debug('Testing... ', ['fromEmail' => $fromEmail, 'accounts' => serialize($this->accounts), 'selectedAccount' => serialize($this->selectedAccount)]);
+            $this->logger->debug('Selecting account, the new way... ', ['acc' => $acc]);
+            $this->logger->debug('differentFromAddresses ', ['sentMessageFrom' => $fromEmail, 'mime' => $email->getFrom()]);
+
+            $recipientsMeta   = $this->mauticGetRecipientData($sentMessage);
+            $fixedFromAddress = $this->mauticComposeFromAddressObject($sentMessage);
+            $sentMessage      = $this->mauticReadjustHeaders($sentMessage, $fixedFromAddress);
             foreach ($recipientsMeta as $recipientMeta) {
                 $payload = $this->mauticGetPayload(
                     $sentMessage,
