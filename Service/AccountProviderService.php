@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\MauticMailgunMailerBundle\Service;
 
+use MauticPlugin\MauticMailgunMailerBundle\DTO\SendingAccountSettings;
+
 class AccountProviderService
 {
     /**
@@ -14,9 +16,10 @@ class AccountProviderService
     public function __construct(
         private array $accounts = []
     ) {
+        $this->selectedIndex = null;
     }
 
-    private function parseEmail($email)
+    private function parseEmail($email): array
     {
         $email = strtolower($email);
         $parts = explode('@', $email);
@@ -27,7 +30,26 @@ class AccountProviderService
         ];
     }
 
-    public function getAccount()
+    /**
+     * Parse TLD.
+     *
+     * Note: Its not perfect, but should cover most cases,
+     *
+     * @param string $domain
+     */
+    private function parseTld($domain): string
+    {
+        $parts = explode('.', $domain);
+        if (count($parts) <= 2) {
+            return $domain;
+        } else {
+            unset($parts[0]);
+
+            return implode('.', $parts);
+        }
+    }
+
+    public function getAccount(): ?SendingAccountSettings
     {
         if (null === $this->selectedIndex) {
             return null;
@@ -36,11 +58,47 @@ class AccountProviderService
         return $this->accounts[$this->selectedIndex];
     }
 
-    public function selectedAccount($email)
+    public function selectAccount($email): self
     {
-        $emailInfo = $this->parseEmail($email);
-        $domain    = $emailInfo['domain'];
+        $this->selectedIndex = null;
+        $emailInfo           = $this->parseEmail($email);
+        $domain              = $emailInfo['domain'];
 
-        return $domain;
+        if (null === $domain) {
+            return $this;
+        }
+
+        $tldDomain       = $this->parseTld($domain);
+        $exactMatchIndex = null;
+        $tldMatchIndex   = null;
+        $i               = 0;
+        $size            = count($this->accounts);
+        while ($i < $size
+                && (null === $exactMatchIndex || null === $tldMatchIndex)
+        ) {
+            $isExactMatch = $this->accounts[$i]->getSendingDomain() === $domain;
+            $isTldMatch   = $this->parseTld(
+                $this->accounts[$i]->getSendingDomain()
+            )
+                === $tldDomain;
+
+            if ($isExactMatch) {
+                $exactMatchIndex = $i;
+            }
+
+            if ($isTldMatch) {
+                $tldMatchIndex = $i;
+            }
+
+            ++$i;
+        }
+
+        if (null !== $exactMatchIndex) {
+            $this->selectedIndex = $exactMatchIndex;
+        } elseif (null !== $tldMatchIndex) {
+            $this->selectedIndex = $tldMatchIndex;
+        }
+
+        return $this;
     }
 }

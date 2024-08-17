@@ -39,14 +39,18 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         'content-type',
     ];
 
+    /**
+     * This header should be removed if given before sending to mailgun,
+     * as its placed as alternative custom header into the message
+     * when sending segment emails, as Mautic does not set the
+     * headers properly on its own.
+     */
     public const MAUTIC_TEMP_FROM_NAME_HEADER = 'MGTR-From-Name';
 
     /**
      * @var LoggerInterface
      */
     private $logger;
-
-    // Configuration
 
     /**
      * @var string
@@ -79,54 +83,14 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     private $webhookSigningKey;
 
     /**
-     * @var array
-     */
-    private $accounts;
-
-    /**
      * @var AccountProviderService
      */
     private $accountProviderService;
 
     /**
-     * This is actually selected account domain.
-     *
-     * @var array
-     * */
-    private $selectedAccount;
-
-    /**
-     * @var string|null
-     * */
-    private $accountDomain;
-
-    /**
      * @var array
      */
     private $mauticTransportOptions;
-
-    private function selectAccount($email)
-    {
-        $email = strtolower($email);
-        $parts = explode('@', $email);
-
-        // $parts[1] should contain top level domain.
-        $this->accountDomain = $parts[1];
-        if (isset($this->accounts[$this->accountDomain])) {
-            $this->selectedAccount = $this->accounts[$this->accountDomain];
-        } else {
-            // Config not found, which means we will use default config.
-            $this->accountDomain   = null;
-            $this->selectedAccount = [];
-        }
-
-        return $this;
-    }
-
-    private function isAccountSelected()
-    {
-        return null !== $this->accountDomain;
-    }
 
     public function __construct(
         string $host = '',
@@ -135,23 +99,18 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         int $maxBatchLimit = 0,
         string $callbackUrl = '',
         string $webhookSigningKey = '',
-        array $accounts = [],
         AccountProviderService $accountProviderService = null,
         EventDispatcherInterface $dispatcher = null,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null,
     ) {
-        $this->host                   = $host;
-        $this->key                    = $key;
-        $this->domain                 = $domain;
-        $this->maxBatchLimit          = $maxBatchLimit;
-        $this->callbackUrl            = $callbackUrl;
-        $this->webhookSigningKey      = $webhookSigningKey;
-        $this->accounts               = $accounts;
-        $this->accountProviderService = $accountProviderService;
-
-        $this->selectedAccount          = [];
-        $this->accountDomain            = null;
+        $this->host                     = $host;
+        $this->key                      = $key;
+        $this->domain                   = $domain;
+        $this->maxBatchLimit            = $maxBatchLimit;
+        $this->callbackUrl              = $callbackUrl;
+        $this->webhookSigningKey        = $webhookSigningKey;
+        $this->accountProviderService   = $accountProviderService;
         $this->mauticTransportOptions   = [
             'o:testmode' => 'no',
             'o:tracking' => 'no',
@@ -166,7 +125,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         }
 
         $this->logger          = $logger;
-
         parent::__construct($client, $dispatcher, $logger);
     }
 
@@ -181,8 +139,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
     public function getKey(): string
     {
-        if (null !== $this->accountDomain) {
-            return $this->selectedAccount['api_key'];
+        if (null !== $this->accountProviderService->getAccount()) {
+            return $this->accountProviderService->getAccount()
+                ->getApiKey();
         }
 
         // Use value from Email Settings.
@@ -191,8 +150,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
     public function getDomain(): string
     {
-        if (null !== $this->accountDomain) {
-            return $this->selectedAccount['host'];
+        if (null !== $this->accountProviderService->getAccount()) {
+            return $this->accountProviderService->getAccount()
+                ->getSendingDomain();
         }
 
         // Use value from Email Settings.
@@ -201,8 +161,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
     public function getRegion(): ?string
     {
-        if (null !== $this->accountDomain) {
-            return $this->selectedAccount['region'];
+        if (null !== $this->accountProviderService->getAccount()) {
+            return $this->accountProviderService->getAccount()
+                ->getRegion();
         }
 
         return $this->region;
@@ -460,8 +421,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
      *
      * We do this in the plugin since we are not able to do it, using Mailgun API endpoint.
      *
-     * @param  [type] $messageContent Content of email message
-     * @param  [type] $tokens         Mautic tokens to replace
+     * @param string $messageContent Content of email message
+     * @param array  $tokens         Mautic tokens to replace
      *
      * @return string Email content with replaced tokens
      */
@@ -640,17 +601,13 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
             // For sending all other emails (segments, example emails, direct emails, etc.)
             $fromEmail = $this->mauticGetFromEmail($sentMessage);
-            $this->selectAccount($fromEmail);
-            $acc = $this->accountProviderService->selectedAccount($fromEmail);
-            if (!$this->isAccountSelected()) {
-                /**
-                 * @todo Handle the case where account is not selected
-                 * (do not use coreParameters helper here).
-                 */
-            }
-            $this->logger->debug('Testing... ', ['fromEmail' => $fromEmail, 'accounts' => serialize($this->accounts), 'selectedAccount' => serialize($this->selectedAccount)]);
-            $this->logger->debug('Selecting account, the new way... ', ['acc' => $acc]);
-            $this->logger->debug('differentFromAddresses ', ['sentMessageFrom' => $fromEmail, 'mime' => $email->getFrom()]);
+            $this->accountProviderService->selectAccount($fromEmail);
+
+            $testing = [
+                'fromEmail'           => $fromEmail,
+                'isSendingDomainNull' => null === $this->accountProviderService->getAccount() ? true : false,
+            ];
+            $this->logger->debug('Testing... ', $testing);
 
             $recipientsMeta   = $this->mauticGetRecipientData($sentMessage);
             $fixedFromAddress = $this->mauticComposeFromAddressObject($sentMessage);

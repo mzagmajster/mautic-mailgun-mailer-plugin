@@ -67,7 +67,6 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 'mautic.mailer_mailgun_webhook_signing_key',
                 null
             );
-            $accounts = $this->coreParametersHelper->get('mailer_mailgun_accounts');
 
             $rootUrl       = $this->coreParametersHelper->get('site_url');
             $rootUrl       = rtrim($rootUrl, '/');
@@ -92,7 +91,6 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 $maxBatchLimit,
                 $callbackUrl,
                 $webhookSigningKey,
-                $accounts,
                 $accountProviderService,
                 $this->dispatcher,
                 $this->client,
