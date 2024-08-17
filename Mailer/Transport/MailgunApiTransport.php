@@ -603,12 +603,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             $fromEmail = $this->mauticGetFromEmail($sentMessage);
             $this->accountProviderService->selectAccount($fromEmail);
 
-            $testing = [
-                'fromEmail'           => $fromEmail,
-                'isSendingDomainNull' => null === $this->accountProviderService->getAccount() ? true : false,
-            ];
-            $this->logger->debug('Testing... ', $testing);
-
             $recipientsMeta   = $this->mauticGetRecipientData($sentMessage);
             $fixedFromAddress = $this->mauticComposeFromAddressObject($sentMessage);
             $sentMessage      = $this->mauticReadjustHeaders($sentMessage, $fixedFromAddress);
