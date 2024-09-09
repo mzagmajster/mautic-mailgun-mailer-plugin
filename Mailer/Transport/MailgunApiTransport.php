@@ -191,31 +191,42 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     }
 
     /**
-     * @todo Make it work.
+     * Mautic Get Attachments.
      *
-     * @param MauticMessage $email [description]
-     * @param string        $html  [description]
+     * @param MauticMessage $email Mautic Message object
+     * @param string        $html  Email html
      *
-     * @return [type]               [description]
+     * @return array [$attachments, $inlines, $html]
      */
     private function mauticGetAttachments(MauticMessage $email, ?string $html): array
     {
         $attachments = $inlines = [];
+
         foreach ($email->getAttachments() as $attachment) {
-            $headers = $attachment->getPreparedHeaders();
+            $headers  = $attachment->getPreparedHeaders();
+            $filename = $headers->getHeaderParameter('Content-Disposition', 'filename');
+
             if ('inline' === $headers->getHeaderBody('Content-Disposition')) {
-                // replace the cid with just a file name (the only supported way by Mailgun)
                 if ($html) {
-                    $filename = $headers->getHeaderParameter('Content-Disposition', 'filename');
-                    $new      = basename($filename);
-                    $html     = str_replace('cid:'.$filename, 'cid:'.$new, $html);
-                    $p        = new \ReflectionProperty($attachment, 'filename');
-                    $p->setAccessible(true);
-                    $p->setValue($attachment, $new);
+                    $new  = basename($filename);
+                    $html = str_replace('cid:'.$filename, 'cid:'.$new, $html);
+
+                    $reflection = new \ReflectionProperty($attachment, 'filename');
+                    $reflection->setAccessible(true);
+                    $reflection->setValue($attachment, $new);
                 }
-                $inlines[] = $attachment;
+
+                $inlines[] = curl_file_create(
+                    $attachment->getBody(),
+                    $attachment->getContentType(),
+                    $filename
+                );
             } else {
-                $attachments[] = $attachment;
+                $attachments[] = curl_file_create(
+                    $attachment->getBody(),
+                    $attachment->getContentType(),
+                    $filename
+                );
             }
         }
 
@@ -529,13 +540,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 'subject'       => $email->getSubject(),
                 'text'          => $this->replaceMauticTokens($text, $substitutions),
                 'html'          => $this->replaceMauticTokens($html, $substitutions),
-
-                /**
-                 * @todo Support for attachments.
-                 */
-                /* 'attachment'    => $attachments, */
-
-                // 't:variables' => json_encode($substitutions),
+                'attachment'    => $attachments,
+                'inline'        => $inlines,
                 'callback_url'  => $this->callbackUrl,
             ],
             $oHeaders,
