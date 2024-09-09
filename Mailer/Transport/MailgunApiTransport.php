@@ -328,10 +328,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 default:
                     break;
             }
-
-            if (null !== $toList && null !== $fromList && null !== $subject) {
-                break;
-            }
         }
 
         // Details on how to behave with message - these headers can be overwritten if they are specified with the email.
@@ -527,7 +523,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             [
                 'from'          => $this->mauticStringifyAddresses($email->getFrom()),
                 'to'            => $this->mauticStringifyAddresses([$addressTo]),
-                'reply_to'      => $this->mauticStringifyAddresses($email->getReplyTo()),
+                'h:Reply-To'    => $this->mauticStringifyAddresses($email->getReplyTo()),
                 'cc'            => $this->mauticStringifyAddresses($email->getCc()),
                 'bcc'           => $this->mauticStringifyAddresses($email->getBcc()),
                 'subject'       => $email->getSubject(),
