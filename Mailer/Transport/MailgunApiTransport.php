@@ -559,7 +559,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             urlencode($this->getDomain())
         );
 
-        $this->logger->debug('Sending payload', ['payload' => $payload]);
+        $this->logger->debug('Sending payload', ['payload' => $payload, 'endpoint' => $endpoint]);
 
         return $this->client->request(
             'POST',
