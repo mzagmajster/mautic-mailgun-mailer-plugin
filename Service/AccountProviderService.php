@@ -19,6 +19,20 @@ class AccountProviderService
         $this->selectedIndex = null;
     }
 
+    public function __toString()
+    {
+        $sendingDomain = '<none>';
+        if (null !== $this->selectedIndex) {
+            $sendingDomain = $this->accounts[$this->selectedIndex]->getSendingDomain();
+        }
+
+        return sprintf(
+            'SelectedAccountIndex %d - SelectedSendingDomain %s',
+            $this->selectedIndex,
+            $sendingDomain
+        );
+    }
+
     private function parseEmail($email): array
     {
         $email = strtolower($email);

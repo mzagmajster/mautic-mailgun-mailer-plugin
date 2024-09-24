@@ -294,6 +294,19 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         );
     }
 
+    private function mauticMaskLongLog(array $payload)
+    {
+        if (isset($payload['html'])) {
+            $payload['html'] = '<masked>';
+        }
+
+        if (isset($payload['text'])) {
+            $payload['text'] = '<masked>';
+        }
+
+        return $payload;
+    }
+
     private function mauticGetTestMessagePayload(SentMessage $sentMessage): array
     {
         $email = $sentMessage->getOriginalMessage();
@@ -559,7 +572,13 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             urlencode($this->getDomain())
         );
 
-        $this->logger->debug('Sending payload', ['payload' => $payload, 'endpoint' => $endpoint]);
+        $this->logger->debug(
+            'Sending payload',
+            [
+                'endpoint' => $endpoint,
+                'payload'  => $this->mauticMaskLongLog($payload),
+            ]
+        );
 
         return $this->client->request(
             'POST',
@@ -606,6 +625,10 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             // For sending all other emails (segments, example emails, direct emails, etc.)
             $fromEmail = $this->mauticGetFromEmail($sentMessage);
             $this->accountProviderService->selectAccount($fromEmail);
+            $this->logger->debug(
+                'Acccount selected for sending %account%',
+                ['account' => $this->accountProviderService]
+            );
 
             $recipientsMeta   = $this->mauticGetRecipientData($sentMessage);
             $fixedFromAddress = $this->mauticComposeFromAddressObject($sentMessage);
