@@ -40,7 +40,7 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
         CoreParametersHelper $coreParametersHelper = null,
     ) {
         if (\MAUTIC_ENV === 'dev') {
-            $plgDevLogger = $container->get('monolog.logger.plgdev');
+            $plgDevLogger = $container->get('monolog.logger.plgdev', ContainerInterface::NULL_ON_INVALID_REFERENCE);
             $logger       = $plgDevLogger ?? $logger;
         }
 
