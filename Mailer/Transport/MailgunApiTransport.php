@@ -433,7 +433,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $email     = $sentMessage->getOriginalMessage();
         $fromArray = $email->getFrom();
 
-        return count($fromArray) ? $fromArray[0]->getAddress() : '';
+        return count($fromArray) ? current($fromArray)->getAddress() : '';
     }
 
     /**
@@ -627,7 +627,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             $this->accountProviderService->selectAccount($fromEmail);
             $this->logger->debug(
                 'Acccount selected for sending %account%',
-                ['account' => $this->accountProviderService]
+                ['account' => $this->accountProviderService, 'fromEmail' => $fromEmail]
             );
 
             $recipientsMeta   = $this->mauticGetRecipientData($sentMessage);
