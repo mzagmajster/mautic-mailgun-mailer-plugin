@@ -67,6 +67,13 @@ $container->loadFromExtension('monolog', [
 ]);
 ```
 
+If you installed everything via DDEv aND want to install CS fix commit hook, you have it in this repo, copy the file to git directory:
+
+```
+cp .devtools/pre-commit .git/hooks
+chmod 744 .git/hooks/pre-commit
+```
+
 ## Running the tests
 
 [todo]
