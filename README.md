@@ -1,4 +1,4 @@
-# Mailgun API plugin for Mautic v3
+# Mailgun API plugin for Mautic v5
 
 Plugin provides integration with Mailgun so you can send email messages from Mautic via API using your domains.
 
@@ -9,7 +9,7 @@ Plugin provides integration with Mailgun so you can send email messages from Mau
 
 ### Prerequisites
 
-* Project was tested on Mautic 3.3.3
+* Project was tested on Mautic 5.2.4
 * During development having composer 1 setup can be handy to run scripts in ```composer.json```.
 
 ### Installing
