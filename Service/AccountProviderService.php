@@ -14,7 +14,7 @@ class AccountProviderService
     private $selectedIndex;
 
     public function __construct(
-        private array $accounts = []
+        private array $accounts = [],
     ) {
         $this->selectedIndex = null;
     }

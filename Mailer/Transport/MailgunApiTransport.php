@@ -419,7 +419,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 'subject'       => $subject,
                 'text'          => $text,
                 'html'          => $html,
-                'callback_url'  => $this->callbackUrl,
             ],
             $oHeaders,
             $vHeaders,
