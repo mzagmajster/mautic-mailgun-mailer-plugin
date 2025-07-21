@@ -34,23 +34,26 @@ return [
             ],
         ],
 
-        /*'integrations' => [
-            'mautic.integration.mailgun' => [
-                'class'     => 'MauticPlugin\MauticMailgunMailerBundle\Integration\MailgunMailerIntegration',
-                'tags' => [
-                    'mautic.config_integration',
-                ],
+        'other' => [
+            'mautic.mailgun.sending_account_settings_factory' => [
+                'class'     => \MauticPlugin\MauticMailgunMailerBundle\Factory\SendingAccountSettingsFactory::class,
                 'arguments' => [
-                    'mautic.helper.integration'
+                    'mautic.helper.core_parameters',
                 ],
             ],
-        ],*/
 
-        'other' => [
+            'mautic.mailgun.account_provider_service_factory' => [
+                'class'     => \MauticPlugin\MauticMailgunMailerBundle\Factory\AccountProviderServiceFactory::class,
+                'arguments' => [
+                    'mautic.mailgun.sending_account_settings_factory',
+                ],
+            ],
+
             'mautic.transport.mailgun_api' => [
                 'class'        => \MauticPlugin\MauticMailgunMailerBundle\Swiftmailer\Transport\MailgunApiTransport::class,
                 'serviceAlias' => 'swiftmailer.mailer.transport.%s',
                 'arguments'    => [
+                    'mautic.mailgun.account_provider_service_factory',
                     'mautic.email.model.transport_callback',
                     'mautic.mailgun.guzzle.client',
                     'translator',
