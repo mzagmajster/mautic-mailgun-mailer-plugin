@@ -1,7 +1,5 @@
 <?php
 
-require_once MAUTIC_ROOT_DIR.'/plugins/MauticMailgunMailerBundle/.plugin-env.php';
-
 return [
     'name'        => 'MailgunMailer',
     'description' => 'Integrate PHP Mailer transport for Mailgun API',
@@ -30,9 +28,9 @@ return [
     ],
 
     'parameters' => [
-        'mailer_mailgun_max_batch_limit'       => \MauticPlugin\MauticMailgunMailerBundle\Env\MAX_BATCH_LIMIT,
-        'mailer_mailgun_batch_recipient_count' => \MauticPlugin\MauticMailgunMailerBundle\Env\BATCH_RECIPIENT_COUNT,
-        'mailer_mailgun_region'                => \MauticPlugin\MauticMailgunMailerBundle\Env\REGION,
-        'mailer_mailgun_webhook_signing_key'   => \MauticPlugin\MauticMailgunMailerBundle\Env\WEBHOOK_SIGNING_KEY,
+        'mailer_mailgun_max_batch_limit'       => getenv('MAUTIC_MAILER_MAILGUN_MAX_BATCH_LIMIT') ?: 3000,
+        'mailer_mailgun_batch_recipient_count' => getenv('MAUTIC_MAILER_MAILGUN_BATCH_RECIPIENT_COUNT') ?: 200,
+        'mailer_mailgun_region'                => getenv('MAUTIC_MAILER_MAILGUN_REGION') ?: 'eu',
+        'mailer_mailgun_webhook_signing_key'   => getenv('MAUTIC_MAILER_MAILGUN_WEBHOOK_SIGNING_KEY') ?: '',
     ],
 ];
