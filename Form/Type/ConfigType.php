@@ -1,6 +1,5 @@
 <?php
 
-
 namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
 use Symfony\Component\Form\AbstractType;

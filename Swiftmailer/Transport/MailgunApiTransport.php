@@ -8,6 +8,7 @@ use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\EmailBundle\Swiftmailer\Transport\AbstractTokenArrayTransport;
 use Mautic\EmailBundle\Swiftmailer\Transport\CallbackTransportInterface;
 use Mautic\LeadBundle\Entity\DoNotContact;
+use MauticPlugin\MauticMailgunMailerBundle\Factory\AccountProviderServiceFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,30 +61,7 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
     private $coreParametersHelper;
 
-    private function setAccountConfig($email)
-    {
-        $email = strtolower($email);
-        $parts = explode('@', $email);
-
-        // $parts[1] should contain top level domain.
-        $this->accountDomain = $parts[1];
-        $this->accountConfig = $this->coreParametersHelper->get('mailer_mailgun_accounts');
-
-        if (isset($this->accountConfig[$this->accountDomain])) {
-            $this->accountConfig = $this->accountConfig[$this->accountDomain];
-        } else {
-            // Config not found.
-            $this->accountDomain = null;
-            $this->accountConfig = [];
-        }
-
-        return $this;
-    }
-
-    private function isAccountConfigLoaded()
-    {
-        return null !== $this->accountDomain;
-    }
+    private $accountProviderService;
 
     private function getEmailChannelId($headers): string
     {
@@ -97,18 +75,19 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return '';
     }
 
-    public function __construct(TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger, CoreParametersHelper $coreParametersHelper)
+    public function __construct(AccountProviderServiceFactory $accountProviderServiceFactory, TransportCallback $transportCallback, Client $client, TranslatorInterface $translator, int $maxBatchLimit, ?int $batchRecipientCount, $webhookSigningKey = '', LoggerInterface $logger, CoreParametersHelper $coreParametersHelper)
     {
-        $this->transportCallback    = $transportCallback;
-        $this->client               = $client;
-        $this->translator           = $translator;
-        $this->maxBatchLimit        = $maxBatchLimit;
-        $this->batchRecipientCount  = $batchRecipientCount ?: 0;
-        $this->webhookSigningKey    = $webhookSigningKey;
-        $this->accountDomain        = null;
-        $this->accountConfig        = [];
-        $this->logger               = $logger;
-        $this->coreParametersHelper = $coreParametersHelper;
+        $this->accountProviderService = $accountProviderServiceFactory->create();
+        $this->transportCallback      = $transportCallback;
+        $this->client                 = $client;
+        $this->translator             = $translator;
+        $this->maxBatchLimit          = $maxBatchLimit;
+        $this->batchRecipientCount    = $batchRecipientCount ?: 0;
+        $this->webhookSigningKey      = $webhookSigningKey;
+        $this->accountDomain          = null;
+        $this->accountConfig          = [];
+        $this->logger                 = $logger;
+        $this->coreParametersHelper   = $coreParametersHelper;
     }
 
     public function setApiKey(?string $apiKey)
@@ -118,10 +97,13 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return $this;
     }
 
-    public function getApiKey(): string
+    /**
+     * @return string
+     */
+    public function getApiKey()
     {
-        if (null !== $this->accountDomain) {
-            return $this->accountConfig['api_key'];
+        if (null !== $this->accountProviderService->getAccount()) {
+            return $this->accountProviderService->getAccount()->getApiKey();
         }
 
         // Use value from Email Settings.
@@ -135,10 +117,13 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return $this;
     }
 
-    public function getDomain(): string
+    /**
+     * @return string
+     */
+    public function getDomain()
     {
-        if (null !== $this->accountDomain) {
-            return $this->accountConfig['host'];
+        if (null !== $this->accountProviderService->getAccount()) {
+            return $this->accountProviderService->getAccount()->getSendingDomain();
         }
 
         // Use value from Email Settings.
@@ -152,10 +137,13 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         return $this;
     }
 
-    public function getRegion(): string
+    /**
+     * @return string
+     */
+    public function getRegion()
     {
-        if (null !== $this->accountDomain) {
-            return $this->accountConfig['region'];
+        if (null !== $this->accountProviderService->getAccount()) {
+            return $this->accountProviderService->getAccount()->getRegion();
         }
 
         return $this->region;
@@ -192,24 +180,16 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         // Fully initialize instance to use Mailgun-multi account feature.
         $from      = $message->getFrom();
         $fromEmail = current(array_keys($from));
-        $oldName   = $from[$fromEmail];
-        $this->logger->notice('From email for Mailgun multi config: '.$fromEmail);
-        $this->setAccountConfig($fromEmail);
-        if (!$this->isAccountConfigLoaded()) {
-            // We are sending email using domain that is not whitelisted by plugin configuration.
-            $newFromEmail = $this->coreParametersHelper->get('mailer_from_email');
-            $newFromName  = $this->coreParametersHelper->get('mailer_from_name');
-
-            // Swift_Mime_SimpleMessage
-            $newFromName = $oldName.' via '.$newFromName;
-            $message->setFrom([$newFromEmail], $newFromName);
-        }
+        $this->accountProviderService->selectAccount($fromEmail);
+        $this->logger->debug(
+            'Acccount selected for sending %account%',
+            ['account' => $this->accountProviderService, 'fromEmail' => $fromEmail]
+        );
 
         try {
             $count = $this->getBatchRecipientCount($message);
 
-            $preparedMessage = $this->getMessage($message);
-
+            $preparedMessage       = $this->getMessage($message);
             $payload               = $this->getPayload($preparedMessage);
             $endpoint              = sprintf('%s/v3/%s/messages', $this->getEndpoint(), urlencode($this->getDomain()));
             $response              = $this->client->post(
@@ -435,6 +415,12 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
             }
 
             $payload['h:Reply-To'] = $replyTo;
+        }
+
+        // Add all other headers.
+        foreach ($message['headers'] as $headerName => $headerValue) {
+            $newHeaderName           = 'h:'.$headerName;
+            $payload[$newHeaderName] = $headerValue;
         }
 
         if (count($message['recipient-variables'])) {
