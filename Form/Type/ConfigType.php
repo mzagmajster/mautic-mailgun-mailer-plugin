@@ -2,6 +2,7 @@
 
 namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -10,9 +11,9 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 
 class ConfigType extends AbstractType
 {
-    private $coreParametersHelper;
+    private CoreParametersHelper $coreParametersHelper;
 
-    public function __construct($coreParametersHelper)
+    public function __construct(CoreParametersHelper $coreParametersHelper)
     {
         $this->coreParametersHelper = $coreParametersHelper;
     }
@@ -28,7 +29,7 @@ class ConfigType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -46,7 +47,7 @@ class ConfigType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -64,7 +65,7 @@ class ConfigType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -89,7 +90,7 @@ class ConfigType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -110,7 +111,7 @@ class ConfigType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     /*new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -128,7 +129,7 @@ class ConfigType extends AbstractType
                 'attr'       => [
                     'class'   => 'form-control',
                     // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                    ],
+                ],
                 'constraints' => [
                     /*new NotBlank([
                         'message' => 'mautic.core.value.required',
@@ -150,7 +151,7 @@ class ConfigType extends AbstractType
                     'attr'       => [
                         'class'   => 'form-control',
                         // 'tooltip' => 'mautic.asset.config.form.max.size.tooltip',
-                        ],
+                    ],
                     'constraints' => [
                         /*new NotBlank([
                             'message' => 'mautic.core.value.required',

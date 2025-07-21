@@ -27,9 +27,9 @@ class ConfigSubscriber implements EventSubscriberInterface
     {
         $emailDomain                 = $this->getEmailDomain($config['mailer_mailgun_new_host']);
         $currentConfig[$emailDomain] = [
-                'host'    => $config['mailer_mailgun_new_host'],
-                'api_key' => $config['mailer_mailgun_new_api_key'],
-                'region'  => $config['mailer_mailgun_region'],  // Initialize with gloabl region setting.
+            'host'    => $config['mailer_mailgun_new_host'],
+            'api_key' => $config['mailer_mailgun_new_api_key'],
+            'region'  => $config['mailer_mailgun_region'],  // Initialize with gloabl region setting.
         ];
         unset(
             $config['mailer_mailgun_new_host'],
@@ -59,12 +59,12 @@ class ConfigSubscriber implements EventSubscriberInterface
     }
 
     public function onConfigGenerate(ConfigBuilderEvent $event)
-    {
+    {// @MauticAsset/FormTheme/Config/_config_assetconfig_widget.html.twig
         $event->addForm([
             'bundle'     => 'MailgunMailerBundle',
             'formAlias'  => 'mailgunconfig',
             'formType'   => ConfigType::class,
-            'formTheme'  => 'MauticMailgunMailerBundle:FormTheme\Config',
+            'formTheme'  => '@MauticMailgunMailer/FormTheme/Config/_config_mailgunconfig_widget.html.twig',
             'parameters' => $event->getParametersFromConfig('MauticMailgunMailerBundle'),
         ]);
     }

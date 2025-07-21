@@ -9,18 +9,13 @@ use MauticPlugin\MauticMailgunMailerBundle\DTO\SendingAccountSettings;
 class AccountProviderService
 {
     /**
-     * @var int|null
+     * @var int
      */
     private $selectedIndex;
 
-    /**
-     * @var array
-     */
-    private $accounts = [];
-
-    public function __construct(array $accounts = [])
-    {
-        $this->accounts      = $accounts;
+    public function __construct(
+        private array $accounts = [],
+    ) {
         $this->selectedIndex = null;
     }
 
@@ -38,19 +33,14 @@ class AccountProviderService
         );
     }
 
-    /**
-     * @param string $email
-     *
-     * @return array
-     */
-    private function parseEmail($email)
+    private function parseEmail($email): array
     {
         $email = strtolower($email);
         $parts = explode('@', $email);
 
         return [
-            'recipient' => isset($parts[0]) ? $parts[0] : null,
-            'domain'    => isset($parts[1]) ? $parts[1] : null,
+            'recipient' => $parts[0] ?? null,
+            'domain'    => $parts[1] ?? null,
         ];
     }
 
@@ -60,10 +50,8 @@ class AccountProviderService
      * Note: Its not perfect, but should cover most cases,
      *
      * @param string $domain
-     *
-     * @return string
      */
-    private function parseTld($domain)
+    private function parseTld($domain): string
     {
         $parts = explode('.', $domain);
         if (count($parts) <= 2) {
@@ -75,10 +63,7 @@ class AccountProviderService
         }
     }
 
-    /**
-     * @return SendingAccountSettings|null
-     */
-    public function getAccount()
+    public function getAccount(): ?SendingAccountSettings
     {
         if (null === $this->selectedIndex) {
             return null;
@@ -87,12 +72,7 @@ class AccountProviderService
         return $this->accounts[$this->selectedIndex];
     }
 
-    /**
-     * @param string $email
-     *
-     * @return self
-     */
-    public function selectAccount($email)
+    public function selectAccount($email): self
     {
         $this->selectedIndex = null;
         $emailInfo           = $this->parseEmail($email);
@@ -107,12 +87,14 @@ class AccountProviderService
         $tldMatchIndex   = null;
         $i               = 0;
         $size            = count($this->accounts);
-
-        while ($i < $size && (null === $exactMatchIndex || null === $tldMatchIndex)) {
+        while ($i < $size
+                && (null === $exactMatchIndex || null === $tldMatchIndex)
+        ) {
             $isExactMatch = $this->accounts[$i]->getSendingDomain() === $domain;
             $isTldMatch   = $this->parseTld(
                 $this->accounts[$i]->getSendingDomain()
-            ) === $tldDomain;
+            )
+                === $tldDomain;
 
             if ($isExactMatch) {
                 $exactMatchIndex = $i;

@@ -1,4 +1,4 @@
-# Mailgun API plugin for Mautic v3
+# Mailgun API plugin for Mautic v5
 
 Plugin provides integration with Mailgun so you can send email messages from Mautic via API using your domains.
 
@@ -9,7 +9,7 @@ Plugin provides integration with Mailgun so you can send email messages from Mau
 
 ### Prerequisites
 
-* Project was tested on Mautic 3.3.3
+* Project was tested on Mautic 5.2.4
 * During development having composer 1 setup can be handy to run scripts in ```composer.json```.
 
 ### Installing
@@ -38,13 +38,49 @@ rm -rf var/cache/dev/* var/cache/prod/*
 php bin/console mautic:plugins:install --env=dev  # Use mautic:plugins:reload --env=dev for update
 ```
 
+Optional: Add logger plgdev to log things to separate file for easier dev.
+
+Put the following in config/config_local.php:
+
+```
+<?php
+
+$container->loadFromExtension('monolog', [
+    'channels' => [
+        // Other channels..
+        'plgdev'
+    ],
+    'handlers' => [
+        // Other handlers
+        'plgdev' => [
+            'formatter' => 'mautic.monolog.fulltrace.formatter',
+            'type'      => 'rotating_file',
+            'path'      => '%kernel.logs_dir%/plgdev_%kernel.environment%.php',
+            'level'     => 'debug',
+            'channels'  => [
+                'plgdev',
+            ],
+            'max_files' => 7,
+        ],
+        
+    ],
+]);
+```
+
+If you installed everything via DDEv aND want to install CS fix commit hook, you have it in this repo, copy the file to git directory:
+
+```
+cp .devtools/pre-commit .git/hooks
+chmod 744 .git/hooks/pre-commit
+```
+
 ## Running the tests
 
 [todo]
 
 ### Coding style & Syntax Check
 
-Coding style can be checked and fixed with the following commands
+Coding style can be checked and fixed with the following commands. Commands are provided by Mautic core.
 
 ```
 composer lint  # Syntax Check

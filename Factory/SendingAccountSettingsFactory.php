@@ -9,15 +9,9 @@ use MauticPlugin\MauticMailgunMailerBundle\DTO\SendingAccountSettings;
 
 class SendingAccountSettingsFactory
 {
-    /**
-     * @var CoreParametersHelper
-     */
-    private $coreParametersHelper;
-
     public function __construct(
-        CoreParametersHelper $coreParametersHelper
+        private CoreParametersHelper $coreParametersHelper,
     ) {
-        $this->coreParametersHelper = $coreParametersHelper;
     }
 
     public function create(): array

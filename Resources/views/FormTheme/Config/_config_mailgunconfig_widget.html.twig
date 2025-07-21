@@ -1,0 +1,95 @@
+{# Copyright 2014 Mautic Contributors. All rights reserved #}
+{# @author Mautic #}
+{# @link http://mautic.org #}
+{# @license GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html #}
+
+{%  block _config_mailgunconfig_widget %}
+
+{% set domainAccounts = [] %}
+{% for name, field in form.children %}
+    {% if name starts with 'mailer_mailgun_account_' %}
+        {% set domainAccounts = domainAccounts|merge([name]) %}
+    {% endif %}
+{% endfor %}
+
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h3 class="panel-title">{% trans %}mautic.config.tab.mailgunconfig.global{% endtrans %}</h3>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-6">
+                {{ form_row(form.children['mailer_mailgun_batch_recipient_count']) }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                {{ form_row(form.children['mailer_mailgun_max_batch_limit']) }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                {{ form_row(form.children['mailer_mailgun_region']) }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                {{ form_row(form.children['mailer_mailgun_webhook_signing_key']) }}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- begin: new domain -->
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h3 class="panel-title">{% trans %}mautic.config.tab.mailgunconfig.new_domain{% endtrans %}</h3>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-6">
+                {{ form_row(form.children['mailer_mailgun_new_host']) }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                {{ form_row(form.children['mailer_mailgun_new_api_key']) }}
+            </div>
+        </div>
+    </div>
+</div> <!-- end: new domain -->
+
+<!-- begin: Mailgun Accounts -->
+{% for accountKey in domainAccounts %}
+    {% set domain = form.children[accountKey]['host'].vars.value %}
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h3 class="panel-title">{% trans %}mautic.mailgunmailer.domain_config{% endtrans %}{{ domain }}</h3>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.children[accountKey]['delete']) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.children[accountKey]['region']) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.children[accountKey]['host']) }}
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    {{ form_row(form.children[accountKey]['api_key']) }}
+                </div>
+            </div>
+        </div>
+    </div> <!-- end: Mailgun Accounts -->
+{% endfor %}
+
+{% endblock %}
