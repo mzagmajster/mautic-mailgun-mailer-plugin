@@ -67,7 +67,11 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
     {
         $keys = array_keys($headers);
         foreach ($keys as $index => $orgKeyName) {
-            if ('x-email-id' == strtolower($orgKeyName)) {
+            $keyName = strtolower($orgKeyName);
+            if ('x-email-id' == $keyName) {
+                return (string) $headers[$orgKeyName];
+            }
+            else if ('tottagroupid' == $keyName) {
                 return (string) $headers[$orgKeyName];
             }
         }
