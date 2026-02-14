@@ -40,56 +40,20 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     ];
 
     /**
-     * This header should be removed if given before sending to mailgun,
-     * as its placed as alternative custom header into the message
-     * when sending segment emails, as Mautic does not set the
-     * headers properly on its own.
+     * In Mautic 7, this is not required anymore, but we keep it here so 
+     * we can use the same codebase for Mautic5.
+     * @var string
      */
     public const MAUTIC_TEMP_FROM_NAME_HEADER = 'MGTR-From-Name';
 
-    /**
-     * @var LoggerInterface
-     */
     private $logger;
-
-    /**
-     * @var string
-     */
     private $key;
-
-    /**
-     * @var string
-     */
     private $domain;
-
-    /**
-     * @var string
-     */
     private $region;
-
-    /**
-     * @var int
-     */
     private $maxBatchLimit;
-
-    /**
-     * @var string
-     */
     private $callbackUrl;
-
-    /**
-     * @var string
-     */
     private $webhookSigningKey;
-
-    /**
-     * @var AccountProviderService
-     */
     private $accountProviderService;
-
-    /**
-     * @var array
-     */
     private $mauticTransportOptions;
 
     public function __construct(
@@ -104,27 +68,24 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         ?HttpClientInterface $client = null,
         ?LoggerInterface $logger = null,
     ) {
-        $this->host                     = $host;
-        $this->key                      = $key;
-        $this->domain                   = $domain;
-        $this->maxBatchLimit            = $maxBatchLimit;
-        $this->callbackUrl              = $callbackUrl;
-        $this->webhookSigningKey        = $webhookSigningKey;
-        $this->accountProviderService   = $accountProviderService;
-        $this->mauticTransportOptions   = [
+        $this->host                   = $host;
+        $this->key                    = $key;
+        $this->domain                 = $domain;
+        $this->maxBatchLimit          = $maxBatchLimit;
+        $this->callbackUrl            = $callbackUrl;
+        $this->webhookSigningKey      = $webhookSigningKey;
+        $this->accountProviderService = $accountProviderService;
+        $this->mauticTransportOptions = [
             'o:testmode' => 'no',
             'o:tracking' => 'no',
         ];
 
-        /**
-         * @todo Find a better approach for this.
-         */
         $this->region = 'eu';
         if ('api.mailgun.net' == $this->host) {
             $this->region = 'us';
         }
 
-        $this->logger          = $logger;
+        $this->logger = $logger;
         parent::__construct($client, $dispatcher, $logger);
     }
 
@@ -140,30 +101,25 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     public function getKey(): string
     {
         if (null !== $this->accountProviderService->getAccount()) {
-            return $this->accountProviderService->getAccount()
-                ->getApiKey();
+            return $this->accountProviderService->getAccount()->getApiKey();
         }
 
-        // Use value from Email Settings.
         return $this->key;
     }
 
     public function getDomain(): string
     {
         if (null !== $this->accountProviderService->getAccount()) {
-            return $this->accountProviderService->getAccount()
-                ->getSendingDomain();
+            return $this->accountProviderService->getAccount()->getSendingDomain();
         }
 
-        // Use value from Email Settings.
         return $this->domain;
     }
 
     public function getRegion(): ?string
     {
         if (null !== $this->accountProviderService->getAccount()) {
-            return $this->accountProviderService->getAccount()
-                ->getRegion();
+            return $this->accountProviderService->getAccount()->getRegion();
         }
 
         return $this->region;
@@ -174,12 +130,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         switch ($this->getRegion()) {
             case 'eu':
                 return 'api.eu.mailgun.net';
-                break;
             case 'us':
                 return 'api.mailgun.net';
-                break;
-            default:
-                break;
         }
 
         return $this->host;
@@ -190,14 +142,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return $this->maxBatchLimit;
     }
 
-    /**
-     * Mautic Get Attachments.
-     *
-     * @param MauticMessage $email Mautic Message object
-     * @param string        $html  Email html
-     *
-     * @return array [$attachments, $inlines, $html]
-     */
     private function mauticGetAttachments(MauticMessage $email, ?string $html): array
     {
         $attachments = $inlines = [];
@@ -272,7 +216,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             throw new TransportException('Message must be an instance of '.MauticMessage::class);
         }
 
-        // When we are sending test email message $metadata and most of $sentMessage is empty
         $metadata = $email->getMetadata();
 
         return !(bool) count($metadata);
@@ -348,29 +291,21 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 case 'subject':
                     $subject = $header->getValue();
                     break;
-
                 default:
                     break;
             }
         }
 
-        // Details on how to behave with message - these headers can be overwritten if they are specified with the email.
         $oHeaders = [
             'o:testmode' => $this->mauticTransportOptions['o:testmode'],
             'o:tracking' => $this->mauticTransportOptions['o:tracking'],
         ];
 
-        // Attach custom JSON data.
         $vHeaders = [];
-
-        // Template variables.
         $tHeaders = [];
-
-        // Other headers.
         $hHeaders = [];
 
         foreach ($headers->all() as $name => $header) {
-            // We skip these headers because we set them in a separate fields.
             if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
                 continue;
             }
@@ -381,12 +316,11 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             }
 
             if ($header instanceof MetadataHeader) {
-                $vHeaderKey            ='v:'.$header->getKey();
+                $vHeaderKey            = 'v:'.$header->getKey();
                 $vHeaders[$vHeaderKey] = $header->getValue();
                 continue;
             }
 
-            // Check if it is a valid prefix or header name according to Mailgun API
             $prefix = substr($name, 0, 2);
             switch ($prefix) {
                 case 'o:':
@@ -407,18 +341,16 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             }
         }
 
-        $substitutions = $recipientMeta['meta']['tokens'] ?? [];
-
         return array_merge(
             [
-                'from'          => $this->mauticStringifyAddresses($fromList),
-                'to'            => $this->mauticStringifyAddresses($toList),
-                'reply_to'      => [],
-                'cc'            => [],
-                'bcc'           => [],
-                'subject'       => $subject,
-                'text'          => $text,
-                'html'          => $html,
+                'from'     => $this->mauticStringifyAddresses($fromList),
+                'to'       => $this->mauticStringifyAddresses($toList),
+                'reply_to' => [],
+                'cc'       => [],
+                'bcc'      => [],
+                'subject'  => $subject,
+                'text'     => $text,
+                'html'     => $html,
             ],
             $oHeaders,
             $vHeaders,
@@ -435,16 +367,6 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return count($fromArray) ? current($fromArray)->getAddress() : '';
     }
 
-    /**
-     * Replace Mautic Tokens.
-     *
-     * We do this in the plugin since we are not able to do it, using Mailgun API endpoint.
-     *
-     * @param string $messageContent Content of email message
-     * @param array  $tokens         Mautic tokens to replace
-     *
-     * @return string Email content with replaced tokens
-     */
     private function replaceMauticTokens($messageContent, $tokens)
     {
         foreach ($tokens as $token => $value) {
@@ -472,39 +394,33 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             throw new TransportException('Message must be an instance of '.MauticMessage::class);
         }
 
-        // Work with objects so we can use mauticStringifyAddresses to properly format.
         $recipientName = $recipientMeta['meta']['name'] ?? '';
         $addressTo     = new Address(
             $recipientMeta['emailTo'],
             $recipientName
         );
+
+        $substitutions = $recipientMeta['meta']['tokens'] ?? [];
+
         $text    = $email->getTextBody();
         $html    = $email->getHtmlBody();
         $headers = $email->getHeaders();
 
-        // Details on how to behave with message - these headers can be overwritten if they are specified with the email.
         $oHeaders = [
             'o:testmode' => $this->mauticTransportOptions['o:testmode'],
             'o:tracking' => $this->mauticTransportOptions['o:tracking'],
         ];
 
-        // Attach custom JSON data.
         $vHeaders = [];
-
-        // Template variables.
         $tHeaders = [];
-
-        // Other headers.
         $hHeaders = [];
 
-        /**
-         * @todo Make attachments work.
-         */
         [$attachments, $inlines, $html] = $this->mauticGetAttachments($email, $html);
 
+        $this->logger->debug('Processing headers', ['ba' => $substitutions]);
         foreach ($headers->all() as $name => $header) {
+            $this->logger->debug('Processing header', ['headerName' => $header->getName()]);
             if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
-                $this->logger->debug('Skipping header ', ['headerName' => $name, 'headerValue' => $header]);
                 continue;
             }
 
@@ -514,12 +430,23 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             }
 
             if ($header instanceof MetadataHeader) {
-                $vHeaderKey            ='v:'.$header->getKey();
+                $vHeaderKey            = 'v:'.$header->getKey();
                 $vHeaders[$vHeaderKey] = $header->getValue();
                 continue;
             }
 
-            // Check if it is a valid prefix or header name according to Mailgun API
+            if ('List-Unsubscribe' === $header->getName()) {
+                if (!empty($substitutions['{unsubscribe_url}'])) {
+                    $hHeaders['h:List-Unsubscribe']      = '<'.$substitutions['{unsubscribe_url}'].'>';
+                    $hHeaders['h:List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+                }
+                continue;
+            }
+
+            if ('List-Unsubscribe-Post' === $header->getName()) {
+                continue;
+            }
+
             $prefix = substr($name, 0, 2);
             switch ($prefix) {
                 case 'o:':
@@ -540,21 +467,19 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             }
         }
 
-        $substitutions = $recipientMeta['meta']['tokens'] ?? [];
-
         return array_merge(
             [
-                'from'          => $this->mauticStringifyAddresses($email->getFrom()),
-                'to'            => $this->mauticStringifyAddresses([$addressTo]),
-                'h:Reply-To'    => $this->mauticStringifyAddresses($email->getReplyTo()),
-                'cc'            => $this->mauticStringifyAddresses($email->getCc()),
-                'bcc'           => $this->mauticStringifyAddresses($email->getBcc()),
-                'subject'       => $email->getSubject(),
-                'text'          => $this->replaceMauticTokens($text, $substitutions),
-                'html'          => $this->replaceMauticTokens($html, $substitutions),
-                'attachment'    => $attachments,
-                'inline'        => $inlines,
-                'callback_url'  => $this->callbackUrl,
+                'from'         => $this->mauticStringifyAddresses($email->getFrom()),
+                'to'           => $this->mauticStringifyAddresses([$addressTo]),
+                'h:Reply-To'   => $this->mauticStringifyAddresses($email->getReplyTo()),
+                'cc'           => $this->mauticStringifyAddresses($email->getCc()),
+                'bcc'          => $this->mauticStringifyAddresses($email->getBcc()),
+                'subject'      => $email->getSubject(),
+                'text'         => $this->replaceMauticTokens($text, $substitutions),
+                'html'         => $this->replaceMauticTokens($html, $substitutions),
+                'attachment'   => $attachments,
+                'inline'       => $inlines,
+                'callback_url' => $this->callbackUrl,
             ],
             $oHeaders,
             $vHeaders,
@@ -583,9 +508,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             'POST',
             'https://'.$endpoint,
             [
-                'auth_basic'   => 'api:'.$this->getKey(),
-                'headers'      => ['Content-Type: application/x-www-form-urlencoded'],
-                'body'         => $payload,
+                'auth_basic' => 'api:'.$this->getKey(),
+                'headers'    => ['Content-Type: application/x-www-form-urlencoded'],
+                'body'       => $payload,
             ]
         );
     }
@@ -613,15 +538,13 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         try {
             $sendingTestMessage = $this->mauticIsSendingTestMessage($sentMessage);
             if ($sendingTestMessage) {
-                $payload = $this->mauticGetTestMessagePayload($sentMessage);
-
+                $payload  = $this->mauticGetTestMessagePayload($sentMessage);
                 $response = $this->mauticGetApiResponse($payload);
                 $this->mauticHandleError($response);
 
                 return $response;
             }
 
-            // For sending all other emails (segments, example emails, direct emails, etc.)
             $fromEmail = $this->mauticGetFromEmail($sentMessage);
             $this->accountProviderService->selectAccount($fromEmail);
             $this->logger->debug(
@@ -632,11 +555,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             $recipientsMeta   = $this->mauticGetRecipientData($sentMessage);
             $fixedFromAddress = $this->mauticComposeFromAddressObject($sentMessage);
             $sentMessage      = $this->mauticReadjustHeaders($sentMessage, $fixedFromAddress);
+
             foreach ($recipientsMeta as $recipientMeta) {
-                $payload = $this->mauticGetPayload(
-                    $sentMessage,
-                    $recipientMeta
-                );
+                $payload  = $this->mauticGetPayload($sentMessage, $recipientMeta);
                 $response = $this->mauticGetApiResponse($payload);
                 $this->mauticHandleError($response);
             }
