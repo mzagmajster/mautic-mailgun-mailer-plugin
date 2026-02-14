@@ -34,10 +34,10 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
     public function __construct(
         ContainerInterface $container,
         SendingAccountSettingsFactory $sendingAccountSettingsFactory,
-        EventDispatcherInterface $dispatcher = null,
-        HttpClientInterface $client = null,
-        LoggerInterface $logger = null,
-        CoreParametersHelper $coreParametersHelper = null,
+        ?EventDispatcherInterface $dispatcher = null,
+        ?HttpClientInterface $client = null,
+        ?LoggerInterface $logger = null,
+        ?CoreParametersHelper $coreParametersHelper = null,
     ) {
         if (\MAUTIC_ENV === 'dev') {
             $plgDevLogger = $container->get('monolog.logger.plgdev', ContainerInterface::NULL_ON_INVALID_REFERENCE);

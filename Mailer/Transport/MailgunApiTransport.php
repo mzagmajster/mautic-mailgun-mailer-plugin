@@ -99,10 +99,10 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         int $maxBatchLimit = 0,
         string $callbackUrl = '',
         string $webhookSigningKey = '',
-        AccountProviderService $accountProviderService = null,
-        EventDispatcherInterface $dispatcher = null,
-        HttpClientInterface $client = null,
-        LoggerInterface $logger = null,
+        ?AccountProviderService $accountProviderService = null,
+        ?EventDispatcherInterface $dispatcher = null,
+        ?HttpClientInterface $client = null,
+        ?LoggerInterface $logger = null,
     ) {
         $this->host                     = $host;
         $this->key                      = $key;
