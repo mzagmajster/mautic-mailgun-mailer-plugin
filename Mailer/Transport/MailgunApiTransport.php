@@ -2,9 +2,12 @@
 
 namespace MauticPlugin\MauticMailgunMailerBundle\Mailer\Transport;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Mautic\EmailBundle\Entity\Email as MauticEmailEntity;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
+use Mautic\UserBundle\Entity\User;
 use MauticPlugin\MauticMailgunMailerBundle\Service\AccountProviderService;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
@@ -40,9 +43,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     ];
 
     /**
-     * In Mautic 7, this is not required anymore, but we keep it here so 
+     * In Mautic 7, this is not required anymore, but we keep it here so
      * we can use the same codebase for Mautic5.
-     * @var string
      */
     public const MAUTIC_TEMP_FROM_NAME_HEADER = 'MGTR-From-Name';
 
@@ -55,6 +57,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     private $webhookSigningKey;
     private $accountProviderService;
     private $mauticTransportOptions;
+    private EntityManagerInterface $entityManager;
 
     public function __construct(
         string $host = '',
@@ -64,6 +67,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         string $callbackUrl = '',
         string $webhookSigningKey = '',
         ?AccountProviderService $accountProviderService = null,
+        ?EntityManagerInterface $entityManager = null,
         ?EventDispatcherInterface $dispatcher = null,
         ?HttpClientInterface $client = null,
         ?LoggerInterface $logger = null,
@@ -75,6 +79,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $this->callbackUrl            = $callbackUrl;
         $this->webhookSigningKey      = $webhookSigningKey;
         $this->accountProviderService = $accountProviderService;
+        $this->entityManager          = $entityManager;
         $this->mauticTransportOptions = [
             'o:testmode' => 'no',
             'o:tracking' => 'no',
@@ -200,9 +205,9 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         }
 
         $metadata = $email->getMetadata();
-        foreach ($metadata as $email => $meta) {
+        foreach ($metadata as $emailAddress => $meta) {
             yield [
-                'emailTo' => $email,
+                'emailTo' => $emailAddress,
                 'meta'    => $meta,
             ];
         }
@@ -221,7 +226,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return !(bool) count($metadata);
     }
 
-    private function mauticComposeFromAddressObject(SentMessage $sentMessage)
+    private function mauticComposeFromAddressObject(SentMessage $sentMessage): Address
     {
         $email          = $sentMessage->getOriginalMessage();
         $orgFromAddress = $email->getFrom()[0];
@@ -237,7 +242,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         );
     }
 
-    private function mauticMaskLongLog(array $payload)
+    private function mauticMaskLongLog(array $payload): array
     {
         if (isset($payload['html'])) {
             $payload['html'] = '<masked>';
@@ -270,9 +275,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $headers = $email->getHeaders();
 
         foreach ($headers->all() as $name => $header) {
-            $headerKey = strtolower($name);
-
-            switch ($headerKey) {
+            switch (strtolower($name)) {
                 case 'from':
                     $fromList = $header->getAddresses();
                     break;
@@ -343,8 +346,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
         return array_merge(
             [
-                'from'     => $this->mauticStringifyAddresses($fromList),
-                'to'       => $this->mauticStringifyAddresses($toList),
+                'from'     => $this->mauticStringifyAddresses($fromList ?? []),
+                'to'       => $this->mauticStringifyAddresses($toList ?? []),
                 'reply_to' => [],
                 'cc'       => [],
                 'bcc'      => [],
@@ -359,7 +362,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         );
     }
 
-    private function mauticGetFromEmail(SentMessage $sentMessage)
+    private function mauticGetFromEmail(SentMessage $sentMessage): string
     {
         $email     = $sentMessage->getOriginalMessage();
         $fromArray = $email->getFrom();
@@ -367,8 +370,12 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return count($fromArray) ? current($fromArray)->getAddress() : '';
     }
 
-    private function replaceMauticTokens($messageContent, $tokens)
+    private function replaceMauticTokens(?string $messageContent, array $tokens): string
     {
+        if (null === $messageContent) {
+            return '';
+        }
+
         foreach ($tokens as $token => $value) {
             $messageContent = str_replace($token, $value, $messageContent);
         }
@@ -376,7 +383,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         return $messageContent;
     }
 
-    private function mauticReadjustHeaders(SentMessage $sentMessage, Address $fixedFromAddress)
+    private function mauticReadjustHeaders(SentMessage $sentMessage, Address $fixedFromAddress): SentMessage
     {
         $sentMessage->getOriginalMessage()
             ->getHeaders()
@@ -384,6 +391,76 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $sentMessage->getOriginalMessage()->from($fixedFromAddress);
 
         return $sentMessage;
+    }
+
+    /**
+     * Resolve reply-to per recipient using the following priority:
+     *
+     * 1. Email entity's explicit reply-to address setting
+     * 2. Lead owner's email (when "use owner as mailer" is enabled)
+     * 3. Whatever MailHelper stamped on the shared message (global config fallback)
+     */
+    private function mauticGetReplyTo(MauticMessage $email, array $recipientMeta): string
+    {
+        $emailId = $recipientMeta['meta']['emailId'] ?? null;
+
+        if (null !== $emailId && null !== $this->entityManager) {
+            $emailEntity = $this->entityManager
+                ->getRepository(MauticEmailEntity::class)
+                ->find($emailId);
+
+            if ($emailEntity) {
+                // 1. Explicit reply-to set on the email entity in Mautic UI
+                $entityReplyTo = $emailEntity->getReplyToAddress();
+                if (!empty($entityReplyTo)) {
+                    $this->logger->debug('mauticGetReplyTo: using email entity reply-to', [
+                        'emailId' => $emailId,
+                        'replyTo' => $entityReplyTo,
+                    ]);
+
+                    return $entityReplyTo;
+                }
+
+                // 2. Owner as mailer — use the lead owner's email as reply-to
+                if ($emailEntity->getUseOwnerAsMailer()) {
+                    $ownerId = $recipientMeta['meta']['tokens']['{ownerid}']
+                        ?? $recipientMeta['meta']['tokens']['{leadfield=owner_id}']
+                        ?? null;
+
+                    if (null !== $ownerId && null !== $this->entityManager) {
+                        $owner = $this->entityManager
+                            ->getRepository(User::class)
+                            ->find((int) $ownerId);
+
+                        if ($owner && $owner->getEmail()) {
+                            $ownerEmail = $owner->getName()
+                                ? sprintf('%s <%s>', $owner->getName(), $owner->getEmail())
+                                : $owner->getEmail();
+
+                            $this->logger->debug('mauticGetReplyTo: using owner email as reply-to', [
+                                'ownerId'  => $ownerId,
+                                'replyTo'  => $ownerEmail,
+                            ]);
+
+                            return $ownerEmail;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Fall back to whatever MailHelper stamped on the shared message
+        $replyTo = $email->getReplyTo();
+        if (!empty($replyTo)) {
+            $fallback = $this->mauticStringifyAddresses($replyTo);
+            $this->logger->debug('mauticGetReplyTo: falling back to message reply-to', [
+                'replyTo' => $fallback,
+            ]);
+
+            return $fallback;
+        }
+
+        return '';
     }
 
     private function mauticGetPayload(SentMessage $sentMessage, array $recipientMeta): array
@@ -417,9 +494,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
 
         [$attachments, $inlines, $html] = $this->mauticGetAttachments($email, $html);
 
-        $this->logger->debug('Processing headers', ['ba' => $substitutions]);
         foreach ($headers->all() as $name => $header) {
-            $this->logger->debug('Processing header', ['headerName' => $header->getName()]);
             if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
                 continue;
             }
@@ -435,6 +510,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 continue;
             }
 
+            // Rebuild List-Unsubscribe per-recipient from token instead of
+            // using the pre-resolved value stamped on the shared message.
             if ('list-unsubscribe' === strtolower($header->getName())) {
                 if (!empty($substitutions['{unsubscribe_url}'])) {
                     $hHeaders['h:List-Unsubscribe']      = '<'.$substitutions['{unsubscribe_url}'].'>';
@@ -443,6 +520,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 continue;
             }
 
+            // Skip — already handled above via unsubscribe_url token
             if ('list-unsubscribe-post' === strtolower($header->getName())) {
                 continue;
             }
@@ -471,7 +549,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             [
                 'from'         => $this->mauticStringifyAddresses($email->getFrom()),
                 'to'           => $this->mauticStringifyAddresses([$addressTo]),
-                'h:Reply-To'   => $this->mauticStringifyAddresses($email->getReplyTo()),
+                'h:Reply-To'   => $this->mauticGetReplyTo($email, $recipientMeta),
                 'cc'           => $this->mauticStringifyAddresses($email->getCc()),
                 'bcc'          => $this->mauticStringifyAddresses($email->getBcc()),
                 'subject'      => $email->getSubject(),
@@ -548,7 +626,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             $fromEmail = $this->mauticGetFromEmail($sentMessage);
             $this->accountProviderService->selectAccount($fromEmail);
             $this->logger->debug(
-                'Acccount selected for sending %account%',
+                'Account selected for sending %account%',
                 ['account' => $this->accountProviderService, 'fromEmail' => $fromEmail]
             );
 

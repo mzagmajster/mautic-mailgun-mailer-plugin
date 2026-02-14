@@ -17,6 +17,7 @@ return [
                     'mautic.mailgun.http.client',
                     'monolog.logger.mautic',
                     'mautic.helper.core_parameters',
+                    'doctrine.orm.entity_manager',
                 ],
                 'tag'          => 'mailer.transport_factory',
             ],

@@ -2,6 +2,7 @@
 
 namespace MauticPlugin\MauticMailgunMailerBundle\Mailer\Factory;
 
+use Doctrine\ORM\EntityManager;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use MauticPlugin\MauticMailgunMailerBundle\Factory\SendingAccountSettingsFactory;
 use MauticPlugin\MauticMailgunMailerBundle\Mailer\Transport\MailgunApiTransport;
@@ -31,6 +32,8 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
      */
     private $sendingAccountSettingsFactory;
 
+    private $entityManager;
+
     public function __construct(
         ContainerInterface $container,
         SendingAccountSettingsFactory $sendingAccountSettingsFactory,
@@ -38,6 +41,7 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
         ?HttpClientInterface $client = null,
         ?LoggerInterface $logger = null,
         ?CoreParametersHelper $coreParametersHelper = null,
+        ?EntityManager $entityManager = null,
     ) {
         if (\MAUTIC_ENV === 'dev') {
             $plgDevLogger = $container->get('monolog.logger.plgdev', ContainerInterface::NULL_ON_INVALID_REFERENCE);
@@ -46,6 +50,7 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
 
         $this->coreParametersHelper          = $coreParametersHelper;
         $this->sendingAccountSettingsFactory = $sendingAccountSettingsFactory;
+        $this->entityManager                 = $entityManager;
 
         parent::__construct(
             $dispatcher,
@@ -92,6 +97,7 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 $callbackUrl,
                 $webhookSigningKey,
                 $accountProviderService,
+                $this->entityManager,
                 $this->dispatcher,
                 $this->client,
                 $this->logger
