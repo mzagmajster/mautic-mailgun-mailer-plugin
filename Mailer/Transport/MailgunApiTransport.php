@@ -435,7 +435,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 continue;
             }
 
-            if ('List-Unsubscribe' === $header->getName()) {
+            if ('list-unsubscribe' === strtolower($header->getName())) {
                 if (!empty($substitutions['{unsubscribe_url}'])) {
                     $hHeaders['h:List-Unsubscribe']      = '<'.$substitutions['{unsubscribe_url}'].'>';
                     $hHeaders['h:List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
@@ -443,7 +443,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 continue;
             }
 
-            if ('List-Unsubscribe-Post' === $header->getName()) {
+            if ('list-unsubscribe-post' === strtolower($header->getName())) {
                 continue;
             }
 
