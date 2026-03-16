@@ -76,7 +76,7 @@ class CallbackSubscriber implements EventSubscriberInterface
         if (isset($deliveryStatus['description'])) {
             $comments = $deliveryStatus['description'];
         } else {
-            $comments = $deliveryStatus['message'];
+            $comments = $deliveryStatus['message'] ?? null;
         }
 
         $type            = null;  // reason in database
@@ -137,7 +137,7 @@ class CallbackSubscriber implements EventSubscriberInterface
             );
         } else {
             $this->transportCallback->addFailureByAddress(
-                $event['recipient'],
+                $event['recipient'] ?? '',
                 $comments,
                 $type,
                 null
