@@ -4,7 +4,7 @@ return [
     'name'        => 'MailgunMailer',
     'description' => 'Integrate PHP Mailer transport for Mailgun API',
     'author'      => 'Stanislav Denysenko',
-    'version'     => '1.0.0',
+    'version'     => '1.0.1',
 
     'services' => [
         'other' => [
@@ -33,5 +33,6 @@ return [
         'mailer_mailgun_batch_recipient_count' => getenv('MAUTIC_MAILER_MAILGUN_BATCH_RECIPIENT_COUNT') ?: 200,
         'mailer_mailgun_region'                => getenv('MAUTIC_MAILER_MAILGUN_REGION') ?: 'eu',
         'mailer_mailgun_webhook_signing_key'   => getenv('MAUTIC_MAILER_MAILGUN_WEBHOOK_SIGNING_KEY') ?: '',
+        'mailer_mailgun_log_api_requests'      => false,
     ],
 ];

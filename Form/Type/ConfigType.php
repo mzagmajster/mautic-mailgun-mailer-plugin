@@ -2,6 +2,7 @@
 
 namespace MauticPlugin\MauticMailgunMailerBundle\Form\Type;
 
+use Mautic\CoreBundle\Form\Type\YesNoButtonGroupType;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
@@ -97,6 +98,21 @@ class ConfigType extends AbstractType
                     ]),
                 ],
                 'data' => $webhookSigningKey,
+            ]
+        );
+
+        $builder->add(
+            'mailer_mailgun_log_api_requests',
+            YesNoButtonGroupType::class,
+            [
+                'label'      => 'mautic.mailgunmailer.form.global.log_api_requests',
+                'label_attr' => ['class' => 'control-label'],
+                'attr'       => [
+                    'class'   => 'form-control',
+                    'tooltip' => 'mautic.mailgunmailer.form.global.log_api_requests.tooltip',
+                ],
+                'data'       => (bool) ($options['data']['mailer_mailgun_log_api_requests'] ?? false),
+                'required'   => false,
             ]
         );
 
