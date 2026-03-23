@@ -7,6 +7,7 @@ use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
+use MauticPlugin\MauticMailgunMailerBundle\Service\ApiLogService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
@@ -45,6 +46,7 @@ class CallbackSubscriber implements EventSubscriberInterface
         private TransportCallback $transportCallback,
         private CoreParametersHelper $coreParametersHelper,
         private LoggerInterface $logger,
+        private ApiLogService $apiLogService,
     ) {
     }
 
@@ -163,6 +165,16 @@ class CallbackSubscriber implements EventSubscriberInterface
         }
 
         $postData  = json_decode($event->getRequest()->getContent(), true);
+
+        if ($this->coreParametersHelper->get('mailer_mailgun_log_api_requests', false)) {
+            $this->apiLogService->logRequest(
+                $event->getRequest()->getUri(),
+                [],
+                200,
+                $event->getRequest()->getContent()
+            );
+        }
+
         $eventData = null;
         $this->logger->debug('Start processCallbackRequest, incomming request', ['postData' => $postData]);
 
