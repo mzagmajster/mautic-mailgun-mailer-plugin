@@ -50,12 +50,28 @@ class CallbackSubscriber implements EventSubscriberInterface
     ) {
     }
 
-    private function getEmailChannelId($headers): string
+    /**
+     * Resolve the Mautic email channel ID from the webhook event data.
+     *
+     * Resolution order:
+     *   1. user-variables.email_id  — set via v:email_id at send time; reliable
+     *   2. message.headers[x-email-id] — legacy h: header fallback; not always
+     *      present in webhook payloads but kept for backward compatibility
+     */
+    private function getEmailChannelId(array $eventData): string
     {
-        $keys = array_keys($headers);
-        foreach ($keys as $index => $orgKeyName) {
-            if ('x-email-id' == strtolower($orgKeyName)) {
-                return (string) $headers[$orgKeyName];
+        // 1. Preferred: Mailgun user-variables (v:email_id sent at API call time)
+        $userVariables = $eventData['user-variables'] ?? [];
+        if (!empty($userVariables['email_id'])) {
+            return (string) $userVariables['email_id'];
+        }
+
+        // 2. Fallback: MIME message headers (h:X-Email-Id) — unreliable in webhooks
+        //    but retained for messages sent before the v: variable was introduced.
+        $messageHeaders = $eventData['message']['headers'] ?? [];
+        foreach (array_keys($messageHeaders) as $headerName) {
+            if ('x-email-id' === strtolower($headerName)) {
+                return (string) $messageHeaders[$headerName];
             }
         }
 
@@ -71,9 +87,8 @@ class CallbackSubscriber implements EventSubscriberInterface
     {
         $event          = $eventData['event'];
         $deliveryStatus = $eventData['delivery-status'] ?? [];
-        $messageHeaders = $eventData['message']['headers'] ?? [];
         $severity       = $eventData['severity'] ?? null;
-        $channelId      = $this->getEmailChannelId($messageHeaders);
+        $channelId      = $this->getEmailChannelId($eventData);
 
         if (isset($deliveryStatus['description'])) {
             $comments = $deliveryStatus['description'];
@@ -125,12 +140,12 @@ class CallbackSubscriber implements EventSubscriberInterface
         }
 
         if (null === $type) {
-            // It does not appear that there is anyhing wrong
+            // It does not appear that there is anything wrong
             // with the message. Nothing else to do here :).
             return;
         }
 
-        if (null !== $channelId && $canUseChannelId) {
+        if (null !== $channelId && '' !== $channelId && $canUseChannelId) {
             $this->transportCallback->addFailureByAddress(
                 $recipient,
                 $comments,
@@ -139,7 +154,7 @@ class CallbackSubscriber implements EventSubscriberInterface
             );
         } else {
             $this->transportCallback->addFailureByAddress(
-                $event['recipient'] ?? '',
+                $recipient ?? '',
                 $comments,
                 $type,
                 null
@@ -164,7 +179,7 @@ class CallbackSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $postData  = json_decode($event->getRequest()->getContent(), true);
+        $postData = json_decode($event->getRequest()->getContent(), true);
 
         if ($this->coreParametersHelper->get('mailer_mailgun_log_api_requests', false)) {
             $this->apiLogService->logRequest(
@@ -217,6 +232,8 @@ class CallbackSubscriber implements EventSubscriberInterface
                 'MailgunTransportCallbackSubscriber: Unrecognized event type.',
                 ['type' => $eventData['event']]
             );
+
+            return;
         }
 
         $recipient = $eventData['recipient'] ?? null;
