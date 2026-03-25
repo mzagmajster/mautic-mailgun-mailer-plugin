@@ -315,6 +315,11 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $tHeaders = [];
         $hHeaders = [];
 
+        $emailId = $recipientMeta['meta']['emailId'] ?? null;
+        if (null !== $emailId) {
+            $vHeaders['v:email_id'] = (string) $emailId;
+        }
+
         foreach ($headers->all() as $name => $header) {
             if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
                 continue;
