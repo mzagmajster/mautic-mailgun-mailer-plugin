@@ -312,13 +312,15 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         ];
 
         $vHeaders = [];
+
+        // Mirror X-Email-Id as v:email_id so Mailgun echoes it back in webhook payloads.
+        $xEmailIdHeader = $headers->get('X-Email-Id');
+        if (null !== $xEmailIdHeader) {
+            $vHeaders['v:email_id'] = $xEmailIdHeader->getBodyAsString();
+        }
+
         $tHeaders = [];
         $hHeaders = [];
-
-        $emailId = $recipientMeta['meta']['emailId'] ?? null;
-        if (null !== $emailId) {
-            $vHeaders['v:email_id'] = (string) $emailId;
-        }
 
         foreach ($headers->all() as $name => $header) {
             if (\in_array(strtolower($name), self::MAUTIC_HEADERS_TO_BYPASS)) {
@@ -501,6 +503,14 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         ];
 
         $vHeaders = [];
+
+        // Read email ID from the h:X-Email-Id header that Mautic stamps on the message,
+        // and mirror it as v:email_id so Mailgun echoes it back in webhook payloads.
+        $xEmailIdHeader = $headers->get('X-Email-Id');
+        if (null !== $xEmailIdHeader) {
+            $vHeaders['v:email_id'] = $xEmailIdHeader->getBodyAsString();
+        }
+
         $tHeaders = [];
         $hHeaders = [];
 
