@@ -47,6 +47,11 @@ foreach ($fieldNames as $name) {
                 <?php echo $view['form']->row($form->children['mailer_mailgun_webhook_signing_key']); ?>
             </div>
         </div>
+        <div class="row">
+            <div class="col-md-6">
+                <?php echo $view['form']->row($form->children['mailer_mailgun_log_api_requests']); ?>
+            </div>
+        </div>
     </div>
     
 </div>

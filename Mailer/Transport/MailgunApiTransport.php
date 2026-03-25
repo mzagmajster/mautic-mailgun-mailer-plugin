@@ -9,6 +9,7 @@ use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
 use Mautic\UserBundle\Entity\User;
 use MauticPlugin\MauticMailgunMailerBundle\Service\AccountProviderService;
+use MauticPlugin\MauticMailgunMailerBundle\Service\ApiLogService;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
@@ -58,6 +59,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
     private $accountProviderService;
     private $mauticTransportOptions;
     private EntityManagerInterface $entityManager;
+    private bool $logApiRequests;
+    private ?ApiLogService $apiLogService;
 
     public function __construct(
         string $host = '',
@@ -71,6 +74,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         ?EventDispatcherInterface $dispatcher = null,
         ?HttpClientInterface $client = null,
         ?LoggerInterface $logger = null,
+        bool $logApiRequests = false,
+        ?ApiLogService $apiLogService = null,
     ) {
         $this->host                   = $host;
         $this->key                    = $key;
@@ -80,6 +85,8 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         $this->webhookSigningKey      = $webhookSigningKey;
         $this->accountProviderService = $accountProviderService;
         $this->entityManager          = $entityManager;
+        $this->logApiRequests         = $logApiRequests;
+        $this->apiLogService          = $apiLogService;
         $this->mauticTransportOptions = [
             'o:testmode' => 'no',
             'o:tracking' => 'no',
@@ -305,6 +312,13 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         ];
 
         $vHeaders = [];
+
+        // Mirror X-Email-Id as v:email_id so Mailgun echoes it back in webhook payloads.
+        $xEmailIdHeader = $headers->get('X-Email-Id');
+        if (null !== $xEmailIdHeader) {
+            $vHeaders['v:email_id'] = $xEmailIdHeader->getBodyAsString();
+        }
+
         $tHeaders = [];
         $hHeaders = [];
 
@@ -489,6 +503,14 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
         ];
 
         $vHeaders = [];
+
+        // Read email ID from the h:X-Email-Id header that Mautic stamps on the message,
+        // and mirror it as v:email_id so Mailgun echoes it back in webhook payloads.
+        $xEmailIdHeader = $headers->get('X-Email-Id');
+        if (null !== $xEmailIdHeader) {
+            $vHeaders['v:email_id'] = $xEmailIdHeader->getBodyAsString();
+        }
+
         $tHeaders = [];
         $hHeaders = [];
 
@@ -582,7 +604,7 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
             ]
         );
 
-        return $this->client->request(
+        $response = $this->client->request(
             'POST',
             'https://'.$endpoint,
             [
@@ -591,6 +613,17 @@ class MailgunApiTransport extends AbstractApiTransport implements TokenTransport
                 'body'       => $payload,
             ]
         );
+
+        if ($this->logApiRequests && $this->apiLogService) {
+            $this->apiLogService->logRequest(
+                'https://'.$endpoint,
+                $this->mauticMaskLongLog($payload),
+                $response->getStatusCode(),
+                $response->getContent(false)
+            );
+        }
+
+        return $response;
     }
 
     private function mauticHandleError(ResponseInterface $response): void

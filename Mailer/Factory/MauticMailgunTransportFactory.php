@@ -7,6 +7,7 @@ use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use MauticPlugin\MauticMailgunMailerBundle\Factory\SendingAccountSettingsFactory;
 use MauticPlugin\MauticMailgunMailerBundle\Mailer\Transport\MailgunApiTransport;
 use MauticPlugin\MauticMailgunMailerBundle\Service\AccountProviderService;
+use MauticPlugin\MauticMailgunMailerBundle\Service\ApiLogService;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -89,6 +90,9 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 $this->sendingAccountSettingsFactory->create()
             );
 
+            $logApiRequests = (bool) $this->coreParametersHelper->get('mailer_mailgun_log_api_requests', false);
+            $apiLogService  = new ApiLogService($this->entityManager, $this->logger);
+
             return new MailgunApiTransport(
                 $host,
                 $key,
@@ -100,7 +104,9 @@ final class MauticMailgunTransportFactory extends AbstractTransportFactory
                 $this->entityManager,
                 $this->dispatcher,
                 $this->client,
-                $this->logger
+                $this->logger,
+                $logApiRequests,
+                $apiLogService,
             );
         }
 
