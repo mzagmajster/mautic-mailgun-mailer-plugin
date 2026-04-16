@@ -63,15 +63,23 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
     private $accountProviderService;
 
-    private function getEmailChannelId($headers): string
+    private function getEmailChannelId(array $event): string
     {
-        $keys = array_keys($headers);
-        foreach ($keys as $index => $orgKeyName) {
+        // 1. Preferred: Mailgun user-variables (v:email_id sent at API call time).
+        //    Mailgun reliably echoes these back in webhook payloads.
+        $userVariables = $event['user-variables'] ?? [];
+        if (!empty($userVariables['email_id'])) {
+            return (string) $userVariables['email_id'];
+        }
+
+        // 2. Fallback: MIME message headers (h:X-Email-Id) — not always
+        //    present in webhook payloads but kept for backward compatibility.
+        $headers = $event['message']['headers'] ?? [];
+        foreach (array_keys($headers) as $orgKeyName) {
             $keyName = strtolower($orgKeyName);
-            if ('x-email-id' == $keyName) {
+            if ('x-email-id' === $keyName) {
                 return (string) $headers[$orgKeyName];
-            }
-            else if ('tottgroupid' == $keyName) {
+            } elseif ('tottgroupid' === $keyName) {
                 return (string) $headers[$orgKeyName];
             }
         }
@@ -317,10 +325,10 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
 
             $channelId = null;
             $this->logger->debug(serialize($event));
-            if (isset($event['message']['headers'])) {
-                $event['CustomID'] = $this->getEmailChannelId($event['message']['headers']);
+            $event['CustomID'] = $this->getEmailChannelId($event);
 
-                // Make sure channel ID is always set, so data on graph is displayed correctly.
+            // Make sure channel ID is always set, so data on graph is displayed correctly.
+            if ('' !== $event['CustomID']) {
                 $channelId = (int) $event['CustomID'];
             }
 
@@ -425,6 +433,13 @@ class MailgunApiTransport extends AbstractTokenArrayTransport implements \Swift_
         foreach ($message['headers'] as $headerName => $headerValue) {
             $newHeaderName           = 'h:'.$headerName;
             $payload[$newHeaderName] = $headerValue;
+
+            // Mirror X-Email-Id as v:email_id so Mailgun echoes it back
+            // in webhook payloads (user-variables). MIME headers are not
+            // reliably included in webhook callbacks.
+            if ('x-email-id' === strtolower($headerName)) {
+                $payload['v:email_id'] = $headerValue;
+            }
         }
 
         if (count($message['recipient-variables'])) {
